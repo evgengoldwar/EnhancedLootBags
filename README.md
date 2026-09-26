@@ -11,8 +11,10 @@ out of them (total amount and how often it dropped). The data is stored per worl
 
 Open the statistics screen with the `/lootbagstats` (or `/lbstats`) client command, or bind a key to
 "LootBag statistics" in the controls menu (category "Enhanced LootBags"; unbound by default).
-The screen lists all LootBags known to the server (including every group registered by the modpack), can be searched
-and filtered, and shows the drops of the selected bag, or of all bags combined. Hover over an item for details.
+The screen is styled after the GuideME guidebooks: a navigation bar on the left lists all LootBags known to the server
+(including every group registered by the modpack) and can be searched and filtered; the page on the right shows the
+selected bag (or all bags combined) with key numbers, every received item and a table of the most frequent drops.
+Hover over an item for details; back/forward buttons (or Backspace) return to previously viewed bags.
 The tooltip of a LootBag also shows how often you have opened that kind of bag.
 
 # How to use Lootbag Commands
