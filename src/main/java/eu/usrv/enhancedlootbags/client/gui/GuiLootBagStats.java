@@ -26,6 +26,7 @@ import org.lwjgl.opengl.GL12;
 import eu.usrv.enhancedlootbags.EnhancedLootBags;
 import eu.usrv.enhancedlootbags.StatHelper;
 import eu.usrv.enhancedlootbags.client.ClientLootBagStats;
+import eu.usrv.enhancedlootbags.client.ClientSettings;
 import eu.usrv.enhancedlootbags.client.LootBagStatsClientHandler;
 import eu.usrv.enhancedlootbags.core.LootGroupsHandler;
 import eu.usrv.enhancedlootbags.core.serializer.LootGroups;
@@ -53,17 +54,46 @@ public class GuiLootBagStats extends GuiScreen {
     private static final int SLOT_SIZE = 18;
     private static final int SCROLL_STEP = 18;
 
-    // Colors
+    /**
+     * Colors of the screen. Text colors are RGB, fill colors ARGB
+     */
+    private enum Theme {
+
+        DARK(0xE8121212, 0x30FFFFFF, 0x18FFFFFF, 0x00D5FF, 0xFFFFFF, 0xD2D2D2, 0x808080, 0x505050, 0x50FFFFFF,
+                EnumChatFormatting.WHITE, EnumChatFormatting.GRAY),
+        LIGHT(0xF0EDEDED, 0x30000000, 0x14000000, 0x0078B4, 0x1A1A1A, 0x3A3A3A, 0x6E6E6E, 0xA0A0A0, 0x50000000,
+                EnumChatFormatting.BLACK, EnumChatFormatting.DARK_GRAY);
+
+        private final int background;
+        private final int line;
+        private final int hover;
+        private final int accent;
+        private final int text;
+        private final int body;
+        private final int dim;
+        private final int faint;
+        private final int scrollbar;
+        /** Formatting codes to highlight numbers inside dimmed text */
+        private final EnumChatFormatting numberFormat;
+        private final EnumChatFormatting labelFormat;
+
+        Theme(int pBackground, int pLine, int pHover, int pAccent, int pText, int pBody, int pDim, int pFaint,
+                int pScrollbar, EnumChatFormatting pNumberFormat, EnumChatFormatting pLabelFormat) {
+            background = pBackground;
+            line = pLine;
+            hover = pHover;
+            accent = pAccent;
+            text = pText;
+            body = pBody;
+            dim = pDim;
+            faint = pFaint;
+            scrollbar = pScrollbar;
+            numberFormat = pNumberFormat;
+            labelFormat = pLabelFormat;
+        }
+    }
+
     private static final int COLOR_OUTSIDE = 0x80000000;
-    private static final int COLOR_BACKGROUND = 0xE8121212;
-    private static final int COLOR_LINE = 0x30FFFFFF;
-    private static final int COLOR_HOVER = 0x18FFFFFF;
-    private static final int COLOR_ACCENT = 0x00D5FF;
-    private static final int COLOR_TEXT = 0xFFFFFF;
-    private static final int COLOR_BODY = 0xD2D2D2;
-    private static final int COLOR_DIM = 0x808080;
-    private static final int COLOR_FAINT = 0x505050;
-    private static final int COLOR_SCROLLBAR = 0x50FFFFFF;
 
     private enum SortMode {
         AMOUNT,
@@ -75,6 +105,8 @@ public class GuiLootBagStats extends GuiScreen {
     private static int sSelectedID = ALL_BAGS_ID;
     private static boolean sShowUnopened = true;
     private static SortMode sSortMode = SortMode.AMOUNT;
+
+    private Theme mTheme = Theme.DARK;
 
     private int mLeft;
     private int mRight;
@@ -104,6 +136,8 @@ public class GuiLootBagStats extends GuiScreen {
         mTop = tMargin;
         mBottom = height - tMargin;
 
+        mTheme = ClientSettings.isLightTheme() ? Theme.LIGHT : Theme.DARK;
+
         Keyboard.enableRepeatEvents(true);
         String tOldSearch = mSearchField == null ? "" : mSearchField.getText();
         mSearchField = new GuiTextField(
@@ -114,7 +148,7 @@ public class GuiLootBagStats extends GuiScreen {
                 10);
         mSearchField.setEnableBackgroundDrawing(false);
         mSearchField.setMaxStringLength(64);
-        mSearchField.setTextColor(COLOR_BODY);
+        mSearchField.setTextColor(mTheme.body);
         mSearchField.setText(tOldSearch);
 
         reloadStats();
@@ -359,6 +393,16 @@ public class GuiLootBagStats extends GuiScreen {
         return isInside(pX, pY, getContentRight() - tWidth - 1, tY - 1, getContentRight() + 1, tY + 9);
     }
 
+    private String getThemeLabel() {
+        return StatHelper.get(mTheme == Theme.DARK ? "gui.stats.theme_dark" : "gui.stats.theme_light");
+    }
+
+    private boolean isOverThemeLink(int pX, int pY) {
+        int tWidth = fontRendererObj.getStringWidth(getThemeLabel());
+        int tRight = mRight - PADDING;
+        return isInside(pX, pY, tRight - tWidth - 1, mTop + 7, tRight + 1, mTop + 17);
+    }
+
     private boolean isOverFilterLink(int pX, int pY) {
         int tY = mBottom - NAV_FOOTER_HEIGHT + 4;
         int tWidth = fontRendererObj.getStringWidth(getFilterLabel());
@@ -393,11 +437,19 @@ public class GuiLootBagStats extends GuiScreen {
             updateVisibleBags();
             return;
         }
+        // Left click cycles the sort mode forward, right click backwards
+        if ((pButton == 0 || pButton == 1) && isOverSortLink(pX, pY)) {
+            int tCount = SortMode.values().length;
+            sSortMode = SortMode.values()[(sSortMode.ordinal() + (pButton == 0 ? 1 : tCount - 1)) % tCount];
+            updateDrops();
+            return;
+        }
         if (pButton != 0) return;
 
-        if (isOverSortLink(pX, pY)) {
-            sSortMode = SortMode.values()[(sSortMode.ordinal() + 1) % SortMode.values().length];
-            updateDrops();
+        if (isOverThemeLink(pX, pY)) {
+            mTheme = mTheme == Theme.DARK ? Theme.LIGHT : Theme.DARK;
+            ClientSettings.setLightTheme(mTheme == Theme.LIGHT);
+            mSearchField.setTextColor(mTheme.body);
             return;
         }
         if (isOverFilterLink(pX, pY)) {
@@ -466,20 +518,30 @@ public class GuiLootBagStats extends GuiScreen {
     @Override
     public void drawScreen(int pMouseX, int pMouseY, float pPartialTicks) {
         drawRect(0, 0, width, height, COLOR_OUTSIDE);
-        drawRect(mLeft, mTop, mRight, mBottom, COLOR_BACKGROUND);
+        drawRect(mLeft, mTop, mRight, mBottom, mTheme.background);
         // Thin outline around the floating panel
-        drawRect(mLeft, mTop, mRight, mTop + 1, COLOR_LINE);
-        drawRect(mLeft, mBottom - 1, mRight, mBottom, COLOR_LINE);
-        drawRect(mLeft, mTop + 1, mLeft + 1, mBottom - 1, COLOR_LINE);
-        drawRect(mRight - 1, mTop + 1, mRight, mBottom - 1, COLOR_LINE);
+        drawRect(mLeft, mTop, mRight, mTop + 1, mTheme.line);
+        drawRect(mLeft, mBottom - 1, mRight, mBottom, mTheme.line);
+        drawRect(mLeft, mTop + 1, mLeft + 1, mBottom - 1, mTheme.line);
+        drawRect(mRight - 1, mTop + 1, mRight, mBottom - 1, mTheme.line);
 
         // Header
-        fontRendererObj.drawString(StatHelper.get("gui.stats.title"), mLeft + PADDING, mTop + 8, COLOR_TEXT);
+        fontRendererObj.drawString(StatHelper.get("gui.stats.title"), mLeft + PADDING, mTop + 8, mTheme.text);
+        String tTheme = getThemeLabel();
+        int tThemeWidth = fontRendererObj.getStringWidth(tTheme);
+        fontRendererObj.drawString(
+                tTheme,
+                mRight - PADDING - tThemeWidth,
+                mTop + 8,
+                isOverThemeLink(pMouseX, pMouseY) ? mTheme.accent : mTheme.dim);
         String tTotal = String.format(StatHelper.get("gui.stats.total_opened"), formatFull(mStats.getTotalOpened()));
-        fontRendererObj
-                .drawString(tTotal, mRight - PADDING - fontRendererObj.getStringWidth(tTotal), mTop + 8, COLOR_DIM);
-        drawRect(mLeft, getHeaderBottom() - 1, mRight, getHeaderBottom(), COLOR_LINE);
-        drawRect(mLeft + NAV_WIDTH - 1, getHeaderBottom(), mLeft + NAV_WIDTH, mBottom, COLOR_LINE);
+        fontRendererObj.drawString(
+                tTotal,
+                mRight - PADDING - tThemeWidth - 12 - fontRendererObj.getStringWidth(tTotal),
+                mTop + 8,
+                mTheme.dim);
+        drawRect(mLeft, getHeaderBottom() - 1, mRight, getHeaderBottom(), mTheme.line);
+        drawRect(mLeft + NAV_WIDTH - 1, getHeaderBottom(), mLeft + NAV_WIDTH, mBottom, mTheme.line);
 
         drawNavigation(pMouseX, pMouseY);
         DropEntry tHovered = drawContent(pMouseX, pMouseY);
@@ -511,7 +573,7 @@ public class GuiLootBagStats extends GuiScreen {
                     StatHelper.get("gui.stats.search"),
                     mSearchField.xPosition,
                     mSearchField.yPosition,
-                    COLOR_FAINT);
+                    mTheme.faint);
         }
         int tLineY = getHeaderBottom() + 17;
         drawRect(
@@ -519,7 +581,7 @@ public class GuiLootBagStats extends GuiScreen {
                 tLineY,
                 mLeft + NAV_WIDTH - PADDING,
                 tLineY + 1,
-                mSearchField.isFocused() ? 0xFF000000 | COLOR_ACCENT : COLOR_LINE);
+                mSearchField.isFocused() ? 0xFF000000 | mTheme.accent : mTheme.line);
 
         int tTop = getNavTop();
         int tBottom = getNavBottom();
@@ -534,13 +596,13 @@ public class GuiLootBagStats extends GuiScreen {
             boolean tSelected = tEntry == mSelected;
             boolean tOpened = tEntry.mID == ALL_BAGS_ID || tEntry.getOpened() > 0;
 
-            if (tSelected) drawRect(mLeft, tY, mLeft + 2, tY + NAV_ROW_HEIGHT, 0xFF000000 | COLOR_ACCENT);
-            if (tEntry == tHovered) drawRect(mLeft, tY, mLeft + NAV_WIDTH - 1, tY + NAV_ROW_HEIGHT, COLOR_HOVER);
+            if (tSelected) drawRect(mLeft, tY, mLeft + 2, tY + NAV_ROW_HEIGHT, 0xFF000000 | mTheme.accent);
+            if (tEntry == tHovered) drawRect(mLeft, tY, mLeft + NAV_WIDTH - 1, tY + NAV_ROW_HEIGHT, mTheme.hover);
 
             drawItem(tEntry.mIcon, mLeft + PADDING - 2, tY + 1, null);
 
-            int tNameColor = tSelected ? COLOR_TEXT
-                    : tEntry == tHovered ? COLOR_ACCENT : tOpened ? COLOR_BODY : COLOR_DIM;
+            int tNameColor = tSelected ? mTheme.text
+                    : tEntry == tHovered ? mTheme.accent : tOpened ? mTheme.body : mTheme.dim;
             fontRendererObj.drawString(
                     fontRendererObj.trimStringToWidth(tEntry.mName, getNavNameWidth(tEntry)),
                     mLeft + PADDING + 18,
@@ -551,7 +613,7 @@ public class GuiLootBagStats extends GuiScreen {
                     tCount,
                     mLeft + NAV_WIDTH - 6 - fontRendererObj.getStringWidth(tCount),
                     tY + 5,
-                    tOpened ? COLOR_DIM : COLOR_FAINT);
+                    tOpened ? mTheme.dim : mTheme.faint);
         }
         endScissor();
 
@@ -562,7 +624,7 @@ public class GuiLootBagStats extends GuiScreen {
                 tFilter,
                 mLeft + PADDING,
                 mBottom - NAV_FOOTER_HEIGHT + 4,
-                isOverFilterLink(pMouseX, pMouseY) ? COLOR_ACCENT : COLOR_DIM);
+                isOverFilterLink(pMouseX, pMouseY) ? mTheme.accent : mTheme.dim);
     }
 
     private DropEntry drawContent(int pMouseX, int pMouseY) {
@@ -572,27 +634,27 @@ public class GuiLootBagStats extends GuiScreen {
 
         // Bag name and a single line of numbers
         fontRendererObj.drawString(
-                mSelected.mRarity.rarityColor + fontRendererObj.trimStringToWidth(mSelected.mName, tRight - tLeft),
+                getRarityFormat(mSelected.mRarity) + fontRendererObj.trimStringToWidth(mSelected.mName, tRight - tLeft),
                 tLeft,
                 tY,
-                COLOR_TEXT);
-        String tSummary = String.format(
+                mTheme.text);
+        String tSummary = mTheme.labelFormat + String.format(
                 StatHelper.get("gui.stats.summary"),
-                formatFull(getSelectedOpened()),
-                formatFull(getSelectedTotalItems()),
-                formatFull(mDrops.size()));
+                highlight(formatFull(getSelectedOpened())),
+                highlight(formatFull(getSelectedTotalItems())),
+                highlight(formatFull(mDrops.size())));
         String tSort = getSortLabel();
         int tSortWidth = fontRendererObj.getStringWidth(tSort);
         fontRendererObj.drawString(
                 fontRendererObj.trimStringToWidth(tSummary, tRight - tLeft - tSortWidth - 8),
                 tLeft,
                 tY + 12,
-                COLOR_DIM);
+                mTheme.dim);
         if (!mDrops.isEmpty()) fontRendererObj.drawString(
                 tSort,
                 tRight - tSortWidth,
                 tY + 12,
-                isOverSortLink(pMouseX, pMouseY) ? COLOR_ACCENT : COLOR_DIM);
+                isOverSortLink(pMouseX, pMouseY) ? mTheme.accent : mTheme.dim);
 
         int tGridTop = getGridTop();
         int tGridBottom = getGridBottom();
@@ -608,7 +670,7 @@ public class GuiLootBagStats extends GuiScreen {
                         tLine,
                         (tLeft + tRight - fontRendererObj.getStringWidth(tLine)) / 2,
                         tTextY,
-                        COLOR_FAINT);
+                        mTheme.faint);
                 tTextY += 10;
             }
             return null;
@@ -624,7 +686,7 @@ public class GuiLootBagStats extends GuiScreen {
             if (tSlotY + SLOT_SIZE <= tGridTop || tSlotY >= tGridBottom) continue;
 
             DropEntry tDrop = mDrops.get(i);
-            if (tDrop == tHovered) drawRect(tX, tSlotY, tX + SLOT_SIZE, tSlotY + SLOT_SIZE, COLOR_HOVER);
+            if (tDrop == tHovered) drawRect(tX, tSlotY, tX + SLOT_SIZE, tSlotY + SLOT_SIZE, mTheme.hover);
             drawItem(tDrop.mStack, tX, tSlotY, formatCompact(tDrop.mItemCount));
         }
         endScissor();
@@ -639,7 +701,7 @@ public class GuiLootBagStats extends GuiScreen {
         if (tMaxScroll <= 0) return;
         int tThumbHeight = Math.max(10, tViewHeight * tViewHeight / pContentHeight);
         int tThumbTop = pTop + (tViewHeight - tThumbHeight) * pScroll / tMaxScroll;
-        drawRect(pX, tThumbTop, pX + 2, tThumbTop + tThumbHeight, COLOR_SCROLLBAR);
+        drawRect(pX, tThumbTop, pX + 2, tThumbTop + tThumbHeight, mTheme.scrollbar);
     }
 
     private void drawItem(ItemStack pStack, int pX, int pY, String pOverlay) {
@@ -713,6 +775,31 @@ public class GuiLootBagStats extends GuiScreen {
 
     private static void endScissor() {
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
+    }
+
+    /**
+     * Highlight a number inside a line of dimmed label text
+     */
+    private String highlight(String pNumber) {
+        return mTheme.numberFormat + pNumber + mTheme.labelFormat;
+    }
+
+    /**
+     * Rarity color for names on the panel. The bright vanilla colors are hard to read on the light theme, so darker
+     * variants are used there
+     */
+    private String getRarityFormat(EnumRarity pRarity) {
+        if (mTheme == Theme.DARK) return pRarity.rarityColor.toString();
+        switch (pRarity) {
+            case uncommon:
+                return EnumChatFormatting.GOLD.toString();
+            case rare:
+                return EnumChatFormatting.DARK_AQUA.toString();
+            case epic:
+                return EnumChatFormatting.DARK_PURPLE.toString();
+            default:
+                return "";
+        }
     }
 
     private static String formatFull(long pNumber) {
