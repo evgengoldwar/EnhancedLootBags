@@ -14,6 +14,7 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.event.world.WorldEvent;
 
@@ -71,12 +72,25 @@ public class LootBagStatsHandler {
         }
     }
 
+    public void onLootConfigReloaded() {
+        if (saveDir == null) return;
+        for (LootBagStats stats : playerStats.values()) updateTrashFlags(stats);
+        dirty = true;
+
+        for (Object player : MinecraftServer.getServer().getConfigurationManager().playerEntityList) {
+            EntityPlayerMP playerMP = (EntityPlayerMP) player;
+            EnhancedLootBags.NW.sendTo(LootBagStatsSyncMessage.full(getStats(playerMP)), playerMP);
+        }
+    }
+
     public void save() {
         if (!dirty || saveDir == null) return;
 
         NBTTagCompound root = new NBTTagCompound();
-        for (Map.Entry<UUID, LootBagStats> entry : playerStats.entrySet())
+        for (Map.Entry<UUID, LootBagStats> entry : playerStats.entrySet()) {
+            if (entry.getValue().getGroups().isEmpty()) continue;
             root.setTag(entry.getKey().toString(), entry.getValue().writeToNBT());
+        }
 
         File file = new File(saveDir, FILE_NAME);
         File tmpFile = new File(saveDir, FILE_NAME + ".tmp");

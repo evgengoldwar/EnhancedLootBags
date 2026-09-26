@@ -306,8 +306,10 @@ public class LootGroupsHandler {
     public boolean reload() {
         boolean tState = ReloadLootGroups("");
         if (_mInitialized) {
-            if (tState) sendClientUpdate();
-            else _mLogger.error("[LootBags] Reload of LootBag file failed. Not sending client update");
+            if (tState) {
+                sendClientUpdate();
+                EnhancedLootBags.statsHandler.onLootConfigReloaded();
+            } else _mLogger.error("[LootBags] Reload of LootBag file failed. Not sending client update");
         }
         return tState;
     }
