@@ -78,6 +78,8 @@ public class GuiLootBagStats extends GuiScreen {
 
     private int mLeft;
     private int mRight;
+    private int mTop;
+    private int mBottom;
 
     private GuiTextField mSearchField;
 
@@ -97,13 +99,17 @@ public class GuiLootBagStats extends GuiScreen {
         int tWidth = Math.min(width, MAX_SCREEN_WIDTH);
         mLeft = (width - tWidth) / 2;
         mRight = mLeft + tWidth;
+        // Medium gap above and below the panel, smaller on tiny screens
+        int tMargin = Math.max(8, Math.min(height / 8, 40));
+        mTop = tMargin;
+        mBottom = height - tMargin;
 
         Keyboard.enableRepeatEvents(true);
         String tOldSearch = mSearchField == null ? "" : mSearchField.getText();
         mSearchField = new GuiTextField(
                 fontRendererObj,
                 mLeft + PADDING,
-                HEADER_HEIGHT + 6,
+                getHeaderBottom() + 6,
                 NAV_WIDTH - 2 * PADDING,
                 10);
         mSearchField.setEnableBackgroundDrawing(false);
@@ -272,12 +278,16 @@ public class GuiLootBagStats extends GuiScreen {
     // Layout
     // ---------------------------------------------------------------------------------------------------------------
 
+    private int getHeaderBottom() {
+        return mTop + HEADER_HEIGHT;
+    }
+
     private int getNavTop() {
-        return HEADER_HEIGHT + NAV_SEARCH_HEIGHT;
+        return getHeaderBottom() + NAV_SEARCH_HEIGHT;
     }
 
     private int getNavBottom() {
-        return height - NAV_FOOTER_HEIGHT;
+        return mBottom - NAV_FOOTER_HEIGHT;
     }
 
     private int getNavMaxScroll() {
@@ -293,11 +303,11 @@ public class GuiLootBagStats extends GuiScreen {
     }
 
     private int getGridTop() {
-        return HEADER_HEIGHT + PADDING + 30;
+        return getHeaderBottom() + PADDING + 30;
     }
 
     private int getGridBottom() {
-        return height - PADDING;
+        return mBottom - PADDING;
     }
 
     private int getGridColumns() {
@@ -345,12 +355,12 @@ public class GuiLootBagStats extends GuiScreen {
     private boolean isOverSortLink(int pX, int pY) {
         if (mDrops.isEmpty()) return false;
         int tWidth = fontRendererObj.getStringWidth(getSortLabel());
-        int tY = HEADER_HEIGHT + PADDING + 12;
+        int tY = getHeaderBottom() + PADDING + 12;
         return isInside(pX, pY, getContentRight() - tWidth - 1, tY - 1, getContentRight() + 1, tY + 9);
     }
 
     private boolean isOverFilterLink(int pX, int pY) {
-        int tY = height - NAV_FOOTER_HEIGHT + 4;
+        int tY = mBottom - NAV_FOOTER_HEIGHT + 4;
         int tWidth = fontRendererObj.getStringWidth(getFilterLabel());
         return isInside(pX, pY, mLeft + PADDING - 1, tY - 1, mLeft + PADDING + tWidth + 1, tY + 9);
     }
@@ -378,7 +388,7 @@ public class GuiLootBagStats extends GuiScreen {
         mSearchField.mouseClicked(pX, pY, pButton);
 
         // Right click into the search field clears it
-        if (pButton == 1 && isInside(pX, pY, mLeft, HEADER_HEIGHT, mLeft + NAV_WIDTH, getNavTop())) {
+        if (pButton == 1 && isInside(pX, pY, mLeft, getHeaderBottom(), mLeft + NAV_WIDTH, getNavTop())) {
             mSearchField.setText("");
             updateVisibleBags();
             return;
@@ -456,14 +466,20 @@ public class GuiLootBagStats extends GuiScreen {
     @Override
     public void drawScreen(int pMouseX, int pMouseY, float pPartialTicks) {
         drawRect(0, 0, width, height, COLOR_OUTSIDE);
-        drawRect(mLeft, 0, mRight, height, COLOR_BACKGROUND);
+        drawRect(mLeft, mTop, mRight, mBottom, COLOR_BACKGROUND);
+        // Thin outline around the floating panel
+        drawRect(mLeft, mTop, mRight, mTop + 1, COLOR_LINE);
+        drawRect(mLeft, mBottom - 1, mRight, mBottom, COLOR_LINE);
+        drawRect(mLeft, mTop + 1, mLeft + 1, mBottom - 1, COLOR_LINE);
+        drawRect(mRight - 1, mTop + 1, mRight, mBottom - 1, COLOR_LINE);
 
         // Header
-        fontRendererObj.drawString(StatHelper.get("gui.stats.title"), mLeft + PADDING, 8, COLOR_TEXT);
+        fontRendererObj.drawString(StatHelper.get("gui.stats.title"), mLeft + PADDING, mTop + 8, COLOR_TEXT);
         String tTotal = String.format(StatHelper.get("gui.stats.total_opened"), formatFull(mStats.getTotalOpened()));
-        fontRendererObj.drawString(tTotal, mRight - PADDING - fontRendererObj.getStringWidth(tTotal), 8, COLOR_DIM);
-        drawRect(mLeft, HEADER_HEIGHT - 1, mRight, HEADER_HEIGHT, COLOR_LINE);
-        drawRect(mLeft + NAV_WIDTH - 1, HEADER_HEIGHT, mLeft + NAV_WIDTH, height, COLOR_LINE);
+        fontRendererObj
+                .drawString(tTotal, mRight - PADDING - fontRendererObj.getStringWidth(tTotal), mTop + 8, COLOR_DIM);
+        drawRect(mLeft, getHeaderBottom() - 1, mRight, getHeaderBottom(), COLOR_LINE);
+        drawRect(mLeft + NAV_WIDTH - 1, getHeaderBottom(), mLeft + NAV_WIDTH, mBottom, COLOR_LINE);
 
         drawNavigation(pMouseX, pMouseY);
         DropEntry tHovered = drawContent(pMouseX, pMouseY);
@@ -497,7 +513,7 @@ public class GuiLootBagStats extends GuiScreen {
                     mSearchField.yPosition,
                     COLOR_FAINT);
         }
-        int tLineY = HEADER_HEIGHT + 17;
+        int tLineY = getHeaderBottom() + 17;
         drawRect(
                 mLeft + PADDING,
                 tLineY,
@@ -545,14 +561,14 @@ public class GuiLootBagStats extends GuiScreen {
         fontRendererObj.drawString(
                 tFilter,
                 mLeft + PADDING,
-                height - NAV_FOOTER_HEIGHT + 4,
+                mBottom - NAV_FOOTER_HEIGHT + 4,
                 isOverFilterLink(pMouseX, pMouseY) ? COLOR_ACCENT : COLOR_DIM);
     }
 
     private DropEntry drawContent(int pMouseX, int pMouseY) {
         int tLeft = getContentLeft();
         int tRight = getContentRight();
-        int tY = HEADER_HEIGHT + PADDING;
+        int tY = getHeaderBottom() + PADDING;
 
         // Bag name and a single line of numbers
         fontRendererObj.drawString(
