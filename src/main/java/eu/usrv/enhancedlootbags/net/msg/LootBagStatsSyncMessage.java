@@ -16,10 +16,6 @@ import eu.usrv.enhancedlootbags.core.stats.LootBagStats.GroupStats;
 import eu.usrv.yamcore.network.client.AbstractClientMessageHandler;
 import io.netty.buffer.ByteBuf;
 
-/**
- * Sends the lootbag statistics of a player to that player. Either the complete statistics (on login), or a single group
- * that just changed (after opening a lootbag)
- */
 public class LootBagStatsSyncMessage implements IMessage {
 
     protected boolean _mFullSync;

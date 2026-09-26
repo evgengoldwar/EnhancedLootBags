@@ -25,10 +25,6 @@ import eu.usrv.enhancedlootbags.core.stats.LootBagStats.GroupStats;
 import eu.usrv.enhancedlootbags.net.msg.LootBagStatsSyncMessage;
 import eu.usrv.yamcore.auxiliary.LogHelper;
 
-/**
- * SERVERSIDE Keeps track of how many lootbags each player has opened, and what they got out of them. The data is stored
- * per world in LootBagStats.dat and synced to the owning player, so it can be displayed in the statistics GUI
- */
 public class LootBagStatsHandler {
 
     private static final String FILE_NAME = "LootBagStats.dat";
@@ -38,9 +34,6 @@ public class LootBagStatsHandler {
     private File _mSaveDir = null;
     private boolean _mDirty = false;
 
-    /**
-     * Make sure the stats of the currently running world are loaded. Handles switching between singleplayer worlds
-     */
     private void initStorage() {
         File tSaveDir = DimensionManager.getCurrentSaveRootDirectory();
         if (tSaveDir == null || tSaveDir.equals(_mSaveDir)) return;
@@ -70,10 +63,6 @@ public class LootBagStatsHandler {
         }
     }
 
-    /**
-     * (Re)classify all recorded drops as trash or regular loot, based on the current loot configuration. Also fills in
-     * the flag for statistics that were recorded before it existed
-     */
     private void updateTrashFlags(LootBagStats pStats) {
         for (GroupStats tGroup : pStats.getGroups()) {
             if (EnhancedLootBags.LootGroupHandler.getGroupByID(tGroup.getGroupID()) == null) continue;
@@ -104,9 +93,6 @@ public class LootBagStatsHandler {
         }
     }
 
-    /**
-     * Save pending changes and forget everything. Called when the server stops
-     */
     public void unload() {
         save();
         _mPlayerStats.clear();
@@ -124,13 +110,6 @@ public class LootBagStatsHandler {
         return tStats;
     }
 
-    /**
-     * Record one opened lootbag and everything that dropped out of it, then send the updated group to the player
-     *
-     * @param pPlayer  The player who opened the bag
-     * @param pGroupID The group (meta) of the opened bag
-     * @param pRecord  All drops the player got
-     */
     public void recordOpening(EntityPlayer pPlayer, int pGroupID, OpenRecord pRecord) {
         GroupStats tGroup = getStats(pPlayer).getOrCreateGroup(pGroupID);
         tGroup.incrementOpened();
@@ -158,9 +137,6 @@ public class LootBagStatsHandler {
         if (!pEvent.world.isRemote && pEvent.world.provider.dimensionId == 0) save();
     }
 
-    /**
-     * Collects the drops of a single lootbag opening
-     */
     public static class OpenRecord {
 
         private final List<Drop> mDrops = new ArrayList<>();

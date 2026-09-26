@@ -16,9 +16,6 @@ import cpw.mods.fml.common.gameevent.TickEvent;
 import cpw.mods.fml.common.network.FMLNetworkEvent;
 import eu.usrv.enhancedlootbags.client.gui.GuiLootBagStats;
 
-/**
- * CLIENTSIDE Opens the lootbag statistics GUI via keybinding or the /lootbagstats client command
- */
 public class LootBagStatsClientHandler {
 
     public static final KeyBinding KEY_OPEN_STATS = new KeyBinding(
@@ -28,10 +25,6 @@ public class LootBagStatsClientHandler {
 
     private static int sOpenRequestTicks = 0;
 
-    /**
-     * Open the statistics GUI as soon as no other screen is shown (the chat screen closes itself only after a command
-     * has been executed). The request expires after one second
-     */
     public static void requestOpen() {
         sOpenRequestTicks = 20;
     }

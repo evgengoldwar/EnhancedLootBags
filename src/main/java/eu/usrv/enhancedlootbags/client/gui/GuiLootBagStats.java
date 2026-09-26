@@ -35,15 +35,10 @@ import eu.usrv.enhancedlootbags.core.stats.LootBagStats;
 import eu.usrv.enhancedlootbags.core.stats.LootBagStats.DropStats;
 import eu.usrv.enhancedlootbags.core.stats.LootBagStats.GroupStats;
 
-/**
- * Shows how many lootbags of each kind the player has opened, and everything they got out of them. Minimal flat look in
- * the colors of the GuideME guidebooks: a list of bags on the left, the received items of the selected bag on the right
- */
 public class GuiLootBagStats extends GuiScreen {
 
     private static final int ALL_BAGS_ID = Integer.MIN_VALUE;
 
-    // Layout
     private static final int MAX_SCREEN_WIDTH = 480;
     private static final int HEADER_HEIGHT = 24;
     private static final int NAV_WIDTH = 140;
@@ -56,9 +51,6 @@ public class GuiLootBagStats extends GuiScreen {
     private static final int SECTION_HEADER_HEIGHT = 13;
     private static final int SECTION_GAP = 8;
 
-    /**
-     * Colors of the screen. Text colors are RGB, fill colors ARGB
-     */
     private enum Theme {
 
         DARK(0xE8121212, 0x30FFFFFF, 0x18FFFFFF, 0x00D5FF, 0xFFFFFF, 0xD2D2D2, 0x808080, 0x505050, 0x50FFFFFF,
@@ -75,7 +67,7 @@ public class GuiLootBagStats extends GuiScreen {
         private final int dim;
         private final int faint;
         private final int scrollbar;
-        /** Formatting codes to highlight numbers inside dimmed text */
+
         private final EnumChatFormatting numberFormat;
         private final EnumChatFormatting labelFormat;
 
@@ -103,7 +95,6 @@ public class GuiLootBagStats extends GuiScreen {
         NAME
     }
 
-    // Remembered while the game is running, so the GUI reopens where the player left it
     private static int sSelectedID = ALL_BAGS_ID;
     private static boolean sShowUnopened = true;
     private static SortMode sSortMode = SortMode.AMOUNT;
@@ -136,7 +127,7 @@ public class GuiLootBagStats extends GuiScreen {
         int tWidth = Math.min(width, MAX_SCREEN_WIDTH);
         mLeft = (width - tWidth) / 2;
         mRight = mLeft + tWidth;
-        // Medium gap above and below the panel, smaller on tiny screens
+
         int tMargin = Math.max(8, Math.min(height / 8, 40));
         mTop = tMargin;
         mBottom = height - tMargin;
@@ -172,13 +163,9 @@ public class GuiLootBagStats extends GuiScreen {
     @Override
     public void updateScreen() {
         mSearchField.updateCursorCounter();
-        // Pick up new statistics if a bag has been opened by other means while the GUI is shown
+
         if (ClientLootBagStats.getStats() != mStats) reloadStats();
     }
-
-    // ---------------------------------------------------------------------------------------------------------------
-    // Data
-    // ---------------------------------------------------------------------------------------------------------------
 
     private void reloadStats() {
         mStats = ClientLootBagStats.getStats();
@@ -198,7 +185,7 @@ public class GuiLootBagStats extends GuiScreen {
                 mAllBags.add(tEntry);
             }
         }
-        // Bags that have been opened but are no longer configured
+
         for (GroupStats tGrpStats : mStats.getGroups()) {
             if (tByID.containsKey(tGrpStats.getGroupID())) continue;
             BagEntry tEntry = new BagEntry(
@@ -251,10 +238,10 @@ public class GuiLootBagStats extends GuiScreen {
     private void updateDrops() {
         mDrops.clear();
         if (mSelected.mID == ALL_BAGS_ID) {
-            // Merge identical items from all bags
             Map<String, DropEntry> tMerged = new HashMap<>();
             for (GroupStats tGrp : mStats.getGroups()) {
                 for (DropStats tDrop : tGrp.getDrops()) {
+                    if (tDrop.getDisplayStack() == null) continue;
                     String tKey = (tDrop.isTrash() ? "T:" : "M:") + getStackKey(tDrop.getDisplayStack());
                     DropEntry tEntry = tMerged.get(tKey);
                     if (tEntry == null) {
@@ -268,6 +255,7 @@ public class GuiLootBagStats extends GuiScreen {
             }
         } else if (mSelected.mStats != null) {
             for (DropStats tDrop : mSelected.mStats.getDrops()) {
+                if (tDrop.getDisplayStack() == null) continue;
                 DropEntry tEntry = new DropEntry(tDrop.getDisplayStack(), tDrop.isTrash());
                 tEntry.mItemCount = tDrop.getItemCount();
                 tEntry.mTimesDropped = tDrop.getTimesDropped();
@@ -287,7 +275,6 @@ public class GuiLootBagStats extends GuiScreen {
                 break;
         }
 
-        // Split into the bag's own loot and the trash that is merged into it
         mMainDrops.clear();
         mTrashDrops.clear();
         for (DropEntry tDrop : mDrops) (tDrop.mTrash ? mTrashDrops : mMainDrops).add(tDrop);
@@ -325,18 +312,11 @@ public class GuiLootBagStats extends GuiScreen {
         return tTotal;
     }
 
-    /**
-     * @return Share of regular loot among all drops in percent (0 = only trash, 100 = no trash at all), or -1 if
-     *         nothing has dropped yet
-     */
     private double getLuckPercent() {
         long tTotal = getSelectedTotalTimes();
         return tTotal == 0 ? -1 : 100.0D * getTimes(mMainDrops) / tTotal;
     }
 
-    /**
-     * Color from red (0%) over yellow (50%) to green (100%)
-     */
     private static int getLuckColor(double pPercent) {
         double tValue = Math.max(0, Math.min(100, pPercent)) / 100.0D;
         int tRed = 0xE0;
@@ -345,10 +325,6 @@ public class GuiLootBagStats extends GuiScreen {
         int tG = tValue < 0.5D ? (int) (0x30 + (tGreen - 0x30) * tValue * 2.0D) : tGreen;
         return (tR & 255) << 16 | (tG & 255) << 8 | 0x30;
     }
-
-    // ---------------------------------------------------------------------------------------------------------------
-    // Layout
-    // ---------------------------------------------------------------------------------------------------------------
 
     private int getHeaderBottom() {
         return mTop + HEADER_HEIGHT;
@@ -470,17 +446,13 @@ public class GuiLootBagStats extends GuiScreen {
         return isInside(pX, pY, mLeft + PADDING - 1, tY - 1, mLeft + PADDING + tWidth + 1, tY + 9);
     }
 
-    // ---------------------------------------------------------------------------------------------------------------
-    // Input
-    // ---------------------------------------------------------------------------------------------------------------
-
     @Override
     protected void keyTyped(char pChar, int pKey) {
         if (mSearchField.textboxKeyTyped(pChar, pKey)) {
             updateVisibleBags();
             return;
         }
-        // Key code 0 is sent for characters without a key of their own (e.g. non-latin keyboard layouts)
+
         if (pKey == Keyboard.KEY_ESCAPE
                 || (pKey != Keyboard.KEY_NONE && (pKey == mc.gameSettings.keyBindInventory.getKeyCode()
                         || pKey == LootBagStatsClientHandler.KEY_OPEN_STATS.getKeyCode()))) {
@@ -492,13 +464,12 @@ public class GuiLootBagStats extends GuiScreen {
     protected void mouseClicked(int pX, int pY, int pButton) {
         mSearchField.mouseClicked(pX, pY, pButton);
 
-        // Right click into the search field clears it
         if (pButton == 1 && isInside(pX, pY, mLeft, getHeaderBottom(), mLeft + NAV_WIDTH, getNavTop())) {
             mSearchField.setText("");
             updateVisibleBags();
             return;
         }
-        // Left click cycles the sort mode forward, right click backwards
+
         if ((pButton == 0 || pButton == 1) && isOverSortLink(pX, pY)) {
             int tCount = SortMode.values().length;
             sSortMode = SortMode.values()[(sSortMode.ordinal() + (pButton == 0 ? 1 : tCount - 1)) % tCount];
@@ -518,7 +489,7 @@ public class GuiLootBagStats extends GuiScreen {
             updateVisibleBags();
             return;
         }
-        // The thin scrollbars can be dragged; Their grab area is a bit wider than the bar itself
+
         if (getNavMaxScroll() > 0
                 && isInside(pX, pY, mLeft + NAV_WIDTH - 5, getNavTop(), mLeft + NAV_WIDTH, getNavBottom())) {
             mDraggingNav = true;
@@ -572,21 +543,16 @@ public class GuiLootBagStats extends GuiScreen {
         else mGridScroll = clamp(mGridScroll + tDelta, 0, getGridMaxScroll());
     }
 
-    // ---------------------------------------------------------------------------------------------------------------
-    // Rendering
-    // ---------------------------------------------------------------------------------------------------------------
-
     @Override
     public void drawScreen(int pMouseX, int pMouseY, float pPartialTicks) {
         drawRect(0, 0, width, height, COLOR_OUTSIDE);
         drawRect(mLeft, mTop, mRight, mBottom, mTheme.background);
-        // Thin outline around the floating panel
+
         drawRect(mLeft, mTop, mRight, mTop + 1, mTheme.line);
         drawRect(mLeft, mBottom - 1, mRight, mBottom, mTheme.line);
         drawRect(mLeft, mTop + 1, mLeft + 1, mBottom - 1, mTheme.line);
         drawRect(mRight - 1, mTop + 1, mRight, mBottom - 1, mTheme.line);
 
-        // Header
         fontRendererObj.drawString(StatHelper.get("gui.stats.title"), mLeft + PADDING, mTop + 8, mTheme.text);
         String tTheme = getThemeLabel();
         int tThemeWidth = fontRendererObj.getStringWidth(tTheme);
@@ -640,7 +606,6 @@ public class GuiLootBagStats extends GuiScreen {
     }
 
     private void drawNavigation(int pMouseX, int pMouseY) {
-        // Search field: just the text and a thin underline
         mSearchField.drawTextBox();
         if (mSearchField.getText().isEmpty() && !mSearchField.isFocused()) {
             fontRendererObj.drawString(
@@ -706,7 +671,6 @@ public class GuiLootBagStats extends GuiScreen {
         int tRight = getContentRight();
         int tY = getHeaderBottom() + PADDING;
 
-        // Bag name and a single line of numbers
         fontRendererObj.drawString(
                 getRarityFormat(mSelected.mRarity) + fontRendererObj.trimStringToWidth(mSelected.mName, tRight - tLeft),
                 tLeft,
@@ -730,7 +694,6 @@ public class GuiLootBagStats extends GuiScreen {
                 tY + 12,
                 isOverSortLink(pMouseX, pMouseY) ? mTheme.accent : mTheme.dim);
 
-        // Luck: share of regular loot among all drops, from red (only trash) to green (no trash)
         double tLuck = getLuckPercent();
         if (tLuck >= 0) {
             int tLuckY = getLuckY();
@@ -769,7 +732,6 @@ public class GuiLootBagStats extends GuiScreen {
             return null;
         }
 
-        // Item grids of the regular loot and the trash, no slot frames
         int tColumns = getGridColumns();
         DropEntry tHovered = getDropAt(pMouseX, pMouseY);
         long tTotalTimes = getSelectedTotalTimes();
@@ -832,9 +794,7 @@ public class GuiLootBagStats extends GuiScreen {
                     pX + 1,
                     pY + 1,
                     pOverlay);
-        } catch (Exception e) {
-            // Some modded items do not like being rendered outside of an inventory; Don't break the whole GUI
-        }
+        } catch (Exception ignored) {}
         itemRender.zLevel = 0.0F;
         GL11.glDisable(GL11.GL_DEPTH_TEST);
         RenderHelper.disableStandardItemLighting();
@@ -888,17 +848,10 @@ public class GuiLootBagStats extends GuiScreen {
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
     }
 
-    /**
-     * Highlight a number inside a line of dimmed label text
-     */
     private String highlight(String pNumber) {
         return mTheme.numberFormat + pNumber + mTheme.labelFormat;
     }
 
-    /**
-     * Rarity color for names on the panel. The bright vanilla colors are hard to read on the light theme, so darker
-     * variants are used there
-     */
     private String getRarityFormat(EnumRarity pRarity) {
         if (mTheme == Theme.DARK) return pRarity.rarityColor.toString();
         switch (pRarity) {
@@ -921,9 +874,6 @@ public class GuiLootBagStats extends GuiScreen {
         return String.format("%,d", pNumber);
     }
 
-    /**
-     * Short number representation that fits into an item slot
-     */
     private static String formatCompact(long pNumber) {
         if (pNumber < 1000) return Long.toString(pNumber);
         if (pNumber < 10000) return String.format(Locale.ROOT, "%.1fk", pNumber / 1000.0D);
@@ -932,10 +882,6 @@ public class GuiLootBagStats extends GuiScreen {
         if (pNumber < 1000000000) return (pNumber / 1000000) + "M";
         return (pNumber / 1000000000) + "G";
     }
-
-    // ---------------------------------------------------------------------------------------------------------------
-    // Entries
-    // ---------------------------------------------------------------------------------------------------------------
 
     private static class BagEntry {
 

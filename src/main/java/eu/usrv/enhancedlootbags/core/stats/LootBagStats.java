@@ -8,10 +8,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 
-/**
- * Lifetime lootbag statistics of a single player: how often each lootbag has been opened, and what dropped out of it.
- * Used on the server (persisted per world) and on the client (synced copy for the statistics GUI).
- */
 public class LootBagStats {
 
     private static final String NBT_GROUPS = "Groups";
@@ -95,23 +91,12 @@ public class LootBagStats {
             return _mDrops.values();
         }
 
-        public long getTotalItems() {
-            long tTotal = 0;
-            for (DropStats tDrop : _mDrops.values()) tTotal += tDrop.getItemCount();
-            return tTotal;
-        }
-
-        /**
-         * Record that the drop with given identifier gave pStack (the full, unsplit stack) to the player
-         *
-         * @param pTrash true if the drop came from the trash group that is merged into this bag
-         */
         public void recordDrop(String pDropID, ItemStack pStack, boolean pTrash) {
             DropStats tDrop = _mDrops.get(pDropID);
             if (tDrop == null) {
                 ItemStack tDisplay = pStack.copy();
                 tDisplay.stackSize = 1;
-                tDrop = new DropStats(pDropID, tDisplay);
+                tDrop = new DropStats(pDropID, tDisplay.writeToNBT(new NBTTagCompound()));
                 _mDrops.put(pDropID, tDrop);
             }
             tDrop.add(pStack.stackSize);
@@ -134,7 +119,7 @@ public class LootBagStats {
             NBTTagList tDrops = pTag.getTagList(NBT_DROPS, 10);
             for (int i = 0; i < tDrops.tagCount(); i++) {
                 DropStats tDrop = DropStats.readFromNBT(tDrops.getCompoundTagAt(i));
-                if (tDrop != null) tStats._mDrops.put(tDrop.getDropID(), tDrop);
+                tStats._mDrops.put(tDrop.getDropID(), tDrop);
             }
             return tStats;
         }
@@ -143,44 +128,34 @@ public class LootBagStats {
     public static class DropStats {
 
         private final String _mDropID;
+        private final NBTTagCompound _mStackTag;
         private final ItemStack _mDisplayStack;
         private long _mItemCount;
         private int _mTimesDropped;
         private boolean _mTrash;
 
-        public DropStats(String pDropID, ItemStack pDisplayStack) {
+        private DropStats(String pDropID, NBTTagCompound pStackTag) {
             _mDropID = pDropID;
-            _mDisplayStack = pDisplayStack;
+            _mStackTag = pStackTag;
+            _mDisplayStack = ItemStack.loadItemStackFromNBT(pStackTag);
         }
 
         public String getDropID() {
             return _mDropID;
         }
 
-        /**
-         * @return A stack of size 1 representing the dropped item
-         */
         public ItemStack getDisplayStack() {
             return _mDisplayStack;
         }
 
-        /**
-         * @return Total amount of items received from this drop
-         */
         public long getItemCount() {
             return _mItemCount;
         }
 
-        /**
-         * @return How many times this drop has been rolled
-         */
         public int getTimesDropped() {
             return _mTimesDropped;
         }
 
-        /**
-         * @return true if this drop came from the trash group of the bag, instead of the bag's own loot
-         */
         public boolean isTrash() {
             return _mTrash;
         }
@@ -197,20 +172,15 @@ public class LootBagStats {
         public NBTTagCompound writeToNBT() {
             NBTTagCompound tTag = new NBTTagCompound();
             tTag.setString(NBT_DROP_ID, _mDropID);
-            tTag.setTag(NBT_DROP_STACK, _mDisplayStack.writeToNBT(new NBTTagCompound()));
+            tTag.setTag(NBT_DROP_STACK, _mStackTag);
             tTag.setLong(NBT_DROP_ITEMS, _mItemCount);
             tTag.setInteger(NBT_DROP_TIMES, _mTimesDropped);
             tTag.setBoolean(NBT_DROP_TRASH, _mTrash);
             return tTag;
         }
 
-        /**
-         * @return The drop stats, or null if the item no longer exists
-         */
         public static DropStats readFromNBT(NBTTagCompound pTag) {
-            ItemStack tStack = ItemStack.loadItemStackFromNBT(pTag.getCompoundTag(NBT_DROP_STACK));
-            if (tStack == null) return null;
-            DropStats tDrop = new DropStats(pTag.getString(NBT_DROP_ID), tStack);
+            DropStats tDrop = new DropStats(pTag.getString(NBT_DROP_ID), pTag.getCompoundTag(NBT_DROP_STACK));
             tDrop._mItemCount = pTag.getLong(NBT_DROP_ITEMS);
             tDrop._mTimesDropped = pTag.getInteger(NBT_DROP_TIMES);
             tDrop._mTrash = pTag.getBoolean(NBT_DROP_TRASH);

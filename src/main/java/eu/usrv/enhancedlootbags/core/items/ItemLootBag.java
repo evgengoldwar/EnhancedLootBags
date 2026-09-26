@@ -178,7 +178,7 @@ public class ItemLootBag extends Item {
                         0.75F,
                         1.0F);
                 pStack.stackSize -= 1;
-                EnhancedLootBags.LootBagStats.recordOpening(pPlayer, tGroupID, tRecord);
+                EnhancedLootBags.StatsHandler.recordOpening(pPlayer, tGroupID, tRecord);
             } else {
                 PlayerChatHelper.SendNotifyWarning(pPlayer, StatHelper.get("string.sorry_damaged"));
             }

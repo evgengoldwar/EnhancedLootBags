@@ -50,7 +50,7 @@ public class EnhancedLootBags {
     public static final String MODNAME = "Enhanced LootBags";
     public static final String NICEFOLDERNAME = "EnhancedLootBags";
     public static LootGroupsHandler LootGroupHandler = null;
-    public static LootBagStatsHandler LootBagStats = null;
+    public static LootBagStatsHandler StatsHandler = null;
     public static ELBConfig ELBCfg = null;
     public static IngameErrorLog AdminLogonErrors = null;
     public static LogHelper Logger = new LogHelper(MODID);
@@ -80,7 +80,7 @@ public class EnhancedLootBags {
         LootGroupHandler.LoadConfig();
         LootGroupHandler.registerBagItem();
 
-        LootBagStats = new LootBagStatsHandler();
+        StatsHandler = new LootBagStatsHandler();
 
         ELBCreativeTab = new CreativeTabs("ELBTab") {
 
@@ -99,8 +99,8 @@ public class EnhancedLootBags {
         FMLCommonHandler.instance().bus().register(AdminLogonErrors);
         FMLCommonHandler.instance().bus().register(LootGroupHandler);
         MinecraftForge.EVENT_BUS.register(LootGroupHandler);
-        FMLCommonHandler.instance().bus().register(LootBagStats);
-        MinecraftForge.EVENT_BUS.register(LootBagStats);
+        FMLCommonHandler.instance().bus().register(StatsHandler);
+        MinecraftForge.EVENT_BUS.register(StatsHandler);
         NetworkRegistry.INSTANCE.registerGuiHandler(this, new GuiHandler());
 
         IMCForNEI.IMCSender();
@@ -120,6 +120,6 @@ public class EnhancedLootBags {
 
     @EventHandler
     public void serverStopped(FMLServerStoppedEvent pEvent) {
-        LootBagStats.unload();
+        StatsHandler.unload();
     }
 }

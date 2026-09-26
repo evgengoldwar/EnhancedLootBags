@@ -8,10 +8,6 @@ import net.minecraftforge.common.config.Property;
 import cpw.mods.fml.common.Loader;
 import eu.usrv.enhancedlootbags.EnhancedLootBags;
 
-/**
- * CLIENTSIDE Personal settings of the player that survive restarts, like the theme of the statistics GUI. Stored in
- * config/EnhancedLootBags/EnhancedLootBags_client.cfg
- */
 public class ClientSettings {
 
     private static final String CATEGORY_GUI = "gui";
@@ -25,7 +21,7 @@ public class ClientSettings {
             if (!tDir.exists()) tDir.mkdirs();
             sConfig = new Configuration(new File(tDir, EnhancedLootBags.NICEFOLDERNAME + "_client.cfg"));
             sConfig.load();
-            // Create the entry with its comment right away, so it can be found in the file
+
             getLightThemeProperty();
             if (sConfig.hasChanged()) sConfig.save();
         }
