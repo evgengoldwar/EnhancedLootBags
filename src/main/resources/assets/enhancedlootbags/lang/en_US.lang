@@ -46,8 +46,4 @@ enhancedlootbags.gui.stats.tip_share=§7Share of all drops: §f%s
 enhancedlootbags.gui.stats.section_main=Loot
 enhancedlootbags.gui.stats.section_trash=Trash
 enhancedlootbags.gui.stats.luck=Luck:
-enhancedlootbags.gui.stats.luck_tip_title=§fLuck: %s
-enhancedlootbags.gui.stats.luck_tip_main=§7Regular loot: §a%s
-enhancedlootbags.gui.stats.luck_tip_trash=§7Trash: §c%s
-enhancedlootbags.gui.stats.luck_tip_info=Share of regular loot among all drops. Trash is everything that comes from the trash group (meta 0) merged into the bag. 0% = only trash, 100% = no trash at all.
 enhancedlootbags.gui.stats.tip_trash=§cTrash

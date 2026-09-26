@@ -378,11 +378,6 @@ public class GuiLootBagStats extends GuiScreen {
         return null;
     }
 
-    private boolean isOverLuck(int x, int y) {
-        return getLuckPercent() >= 0
-                && isInside(x, y, getContentLeft(), getLuckY() - 2, getContentRight(), getLuckY() + 11);
-    }
-
     private String getSortLabel() {
         return StatHelper.get("gui.stats.sort_" + sortMode.name().toLowerCase(Locale.ROOT));
     }
@@ -519,20 +514,7 @@ public class GuiLootBagStats extends GuiScreen {
         DropEntry hovered = drawContent(mouseX, mouseY);
 
         if (hovered != null) drawDropTooltip(hovered, mouseX, mouseY);
-        else if (isOverLuck(mouseX, mouseY)) {
-            List<String> tip = new ArrayList<>();
-            tip.add(
-                    String.format(
-                            StatHelper.get("gui.stats.luck_tip_title"),
-                            String.format("%.1f%%", getLuckPercent())));
-            tip.add(String.format(StatHelper.get("gui.stats.luck_tip_main"), formatFull(getTimes(mainDrops))));
-            tip.add(String.format(StatHelper.get("gui.stats.luck_tip_trash"), formatFull(getTimes(trashDrops))));
-            @SuppressWarnings("unchecked")
-            List<String> info = fontRendererObj
-                    .listFormattedStringToWidth(StatHelper.get("gui.stats.luck_tip_info"), 180);
-            for (String line : info) tip.add(EnumChatFormatting.GRAY + line);
-            drawHoveringText(tip, mouseX, mouseY, fontRendererObj);
-        } else {
+        else {
             BagEntry bag = getBagAt(mouseX, mouseY);
             if (bag != null && fontRendererObj.getStringWidth(bag.name) > getNavNameWidth(bag)) {
                 List<String> tip = new ArrayList<>();
