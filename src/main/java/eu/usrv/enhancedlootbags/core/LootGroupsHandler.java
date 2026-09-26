@@ -228,6 +228,28 @@ public class LootGroupsHandler {
         return null;
     }
 
+    /**
+     * Check whether the drop with given identifier, that dropped from a bag of group pGroupID, came from the trash
+     * group that is merged into that bag (instead of from the bag's own loot). Drops of the trash group's own bag are
+     * always trash
+     *
+     * @return true for trash, false for regular loot or if the drop can't be found anymore
+     */
+    public boolean isTrashDrop(int pGroupID, String pDropID) {
+        LootGroup tGroup = getGroupByID(pGroupID);
+        if (tGroup == null) return false;
+        // The trash group itself (meta 0 by default): everything it drops is trash
+        if (tGroup.getTrashGroup() == pGroupID) return true;
+        if (!tGroup.getCombineWithTrash()) return false;
+
+        for (Drop tDrop : tGroup.getDrops()) if (tDrop.getIdentifier().equals(pDropID)) return false;
+
+        LootGroup tTrashGroup = getGroupByID(tGroup.getTrashGroup());
+        if (tTrashGroup == null) return false;
+        for (Drop tDrop : tTrashGroup.getDrops()) if (tDrop.getIdentifier().equals(pDropID)) return true;
+        return false;
+    }
+
     public LootGroup getGroupByID(int pGroupID) {
         for (LootGroup tGrp : _mLootGroups.getLootTable()) if (tGrp.getGroupID() == pGroupID) return tGrp;
         return null;

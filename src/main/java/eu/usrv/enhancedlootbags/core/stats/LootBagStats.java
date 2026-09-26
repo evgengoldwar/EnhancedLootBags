@@ -22,6 +22,7 @@ public class LootBagStats {
     private static final String NBT_DROP_STACK = "Stack";
     private static final String NBT_DROP_ITEMS = "Items";
     private static final String NBT_DROP_TIMES = "Times";
+    private static final String NBT_DROP_TRASH = "Trash";
 
     private final Map<Integer, GroupStats> _mGroups = new LinkedHashMap<>();
 
@@ -102,8 +103,10 @@ public class LootBagStats {
 
         /**
          * Record that the drop with given identifier gave pStack (the full, unsplit stack) to the player
+         *
+         * @param pTrash true if the drop came from the trash group that is merged into this bag
          */
-        public void recordDrop(String pDropID, ItemStack pStack) {
+        public void recordDrop(String pDropID, ItemStack pStack, boolean pTrash) {
             DropStats tDrop = _mDrops.get(pDropID);
             if (tDrop == null) {
                 ItemStack tDisplay = pStack.copy();
@@ -112,6 +115,7 @@ public class LootBagStats {
                 _mDrops.put(pDropID, tDrop);
             }
             tDrop.add(pStack.stackSize);
+            tDrop.setTrash(pTrash);
         }
 
         public NBTTagCompound writeToNBT() {
@@ -142,6 +146,7 @@ public class LootBagStats {
         private final ItemStack _mDisplayStack;
         private long _mItemCount;
         private int _mTimesDropped;
+        private boolean _mTrash;
 
         public DropStats(String pDropID, ItemStack pDisplayStack) {
             _mDropID = pDropID;
@@ -173,6 +178,17 @@ public class LootBagStats {
             return _mTimesDropped;
         }
 
+        /**
+         * @return true if this drop came from the trash group of the bag, instead of the bag's own loot
+         */
+        public boolean isTrash() {
+            return _mTrash;
+        }
+
+        public void setTrash(boolean pTrash) {
+            _mTrash = pTrash;
+        }
+
         public void add(long pItemCount) {
             _mItemCount += pItemCount;
             _mTimesDropped++;
@@ -184,6 +200,7 @@ public class LootBagStats {
             tTag.setTag(NBT_DROP_STACK, _mDisplayStack.writeToNBT(new NBTTagCompound()));
             tTag.setLong(NBT_DROP_ITEMS, _mItemCount);
             tTag.setInteger(NBT_DROP_TIMES, _mTimesDropped);
+            tTag.setBoolean(NBT_DROP_TRASH, _mTrash);
             return tTag;
         }
 
@@ -196,6 +213,7 @@ public class LootBagStats {
             DropStats tDrop = new DropStats(pTag.getString(NBT_DROP_ID), tStack);
             tDrop._mItemCount = pTag.getLong(NBT_DROP_ITEMS);
             tDrop._mTimesDropped = pTag.getInteger(NBT_DROP_TIMES);
+            tDrop._mTrash = pTag.getBoolean(NBT_DROP_TRASH);
             return tDrop;
         }
     }

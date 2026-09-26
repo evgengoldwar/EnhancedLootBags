@@ -53,6 +53,8 @@ public class GuiLootBagStats extends GuiScreen {
     private static final int PADDING = 10;
     private static final int SLOT_SIZE = 18;
     private static final int SCROLL_STEP = 18;
+    private static final int SECTION_HEADER_HEIGHT = 13;
+    private static final int SECTION_GAP = 8;
 
     /**
      * Colors of the screen. Text colors are RGB, fill colors ARGB
@@ -120,6 +122,9 @@ public class GuiLootBagStats extends GuiScreen {
     private final List<BagEntry> mVisibleBags = new ArrayList<>();
     private BagEntry mSelected;
     private final List<DropEntry> mDrops = new ArrayList<>();
+    private final List<DropEntry> mMainDrops = new ArrayList<>();
+    private final List<DropEntry> mTrashDrops = new ArrayList<>();
+    private final List<Section> mSections = new ArrayList<>();
 
     private int mNavScroll = 0;
     private int mGridScroll = 0;
@@ -250,10 +255,10 @@ public class GuiLootBagStats extends GuiScreen {
             Map<String, DropEntry> tMerged = new HashMap<>();
             for (GroupStats tGrp : mStats.getGroups()) {
                 for (DropStats tDrop : tGrp.getDrops()) {
-                    String tKey = getStackKey(tDrop.getDisplayStack());
+                    String tKey = (tDrop.isTrash() ? "T:" : "M:") + getStackKey(tDrop.getDisplayStack());
                     DropEntry tEntry = tMerged.get(tKey);
                     if (tEntry == null) {
-                        tEntry = new DropEntry(tDrop.getDisplayStack());
+                        tEntry = new DropEntry(tDrop.getDisplayStack(), tDrop.isTrash());
                         tMerged.put(tKey, tEntry);
                         mDrops.add(tEntry);
                     }
@@ -263,7 +268,7 @@ public class GuiLootBagStats extends GuiScreen {
             }
         } else if (mSelected.mStats != null) {
             for (DropStats tDrop : mSelected.mStats.getDrops()) {
-                DropEntry tEntry = new DropEntry(tDrop.getDisplayStack());
+                DropEntry tEntry = new DropEntry(tDrop.getDisplayStack(), tDrop.isTrash());
                 tEntry.mItemCount = tDrop.getItemCount();
                 tEntry.mTimesDropped = tDrop.getTimesDropped();
                 mDrops.add(tEntry);
@@ -281,6 +286,14 @@ public class GuiLootBagStats extends GuiScreen {
                 mDrops.sort(Comparator.comparing((DropEntry e) -> e.mName, String.CASE_INSENSITIVE_ORDER));
                 break;
         }
+
+        // Split into the bag's own loot and the trash that is merged into it
+        mMainDrops.clear();
+        mTrashDrops.clear();
+        for (DropEntry tDrop : mDrops) (tDrop.mTrash ? mTrashDrops : mMainDrops).add(tDrop);
+        mSections.clear();
+        if (!mMainDrops.isEmpty()) mSections.add(new Section(StatHelper.get("gui.stats.section_main"), mMainDrops));
+        if (!mTrashDrops.isEmpty()) mSections.add(new Section(StatHelper.get("gui.stats.section_trash"), mTrashDrops));
         mGridScroll = clamp(mGridScroll, 0, getGridMaxScroll());
     }
 
@@ -303,9 +316,34 @@ public class GuiLootBagStats extends GuiScreen {
     }
 
     private long getSelectedTotalTimes() {
+        return getTimes(mDrops);
+    }
+
+    private static long getTimes(List<DropEntry> pDrops) {
         long tTotal = 0;
-        for (DropEntry tDrop : mDrops) tTotal += tDrop.mTimesDropped;
+        for (DropEntry tDrop : pDrops) tTotal += tDrop.mTimesDropped;
         return tTotal;
+    }
+
+    /**
+     * @return Share of regular loot among all drops in percent (0 = only trash, 100 = no trash at all), or -1 if
+     *         nothing has dropped yet
+     */
+    private double getLuckPercent() {
+        long tTotal = getSelectedTotalTimes();
+        return tTotal == 0 ? -1 : 100.0D * getTimes(mMainDrops) / tTotal;
+    }
+
+    /**
+     * Color from red (0%) over yellow (50%) to green (100%)
+     */
+    private static int getLuckColor(double pPercent) {
+        double tValue = Math.max(0, Math.min(100, pPercent)) / 100.0D;
+        int tRed = 0xE0;
+        int tGreen = 0xC8;
+        int tR = tValue < 0.5D ? tRed : (int) (tRed * (1.0D - tValue) * 2.0D + 0x30 * (tValue - 0.5D) * 2.0D);
+        int tG = tValue < 0.5D ? (int) (0x30 + (tGreen - 0x30) * tValue * 2.0D) : tGreen;
+        return (tR & 255) << 16 | (tG & 255) << 8 | 0x30;
     }
 
     // ---------------------------------------------------------------------------------------------------------------
@@ -336,8 +374,12 @@ public class GuiLootBagStats extends GuiScreen {
         return mRight - PADDING;
     }
 
+    private int getLuckY() {
+        return getHeaderBottom() + PADDING + 26;
+    }
+
     private int getGridTop() {
-        return getHeaderBottom() + PADDING + 30;
+        return getHeaderBottom() + PADDING + 44;
     }
 
     private int getGridBottom() {
@@ -348,8 +390,14 @@ public class GuiLootBagStats extends GuiScreen {
         return Math.max(1, (getContentRight() - getContentLeft()) / SLOT_SIZE);
     }
 
+    private int getSectionHeight(Section pSection) {
+        return SECTION_HEADER_HEIGHT + (pSection.mDrops.size() + getGridColumns() - 1) / getGridColumns() * SLOT_SIZE;
+    }
+
     private int getGridContentHeight() {
-        return (mDrops.size() + getGridColumns() - 1) / getGridColumns() * SLOT_SIZE;
+        int tHeight = 0;
+        for (Section tSection : mSections) tHeight += getSectionHeight(tSection) + SECTION_GAP;
+        return Math.max(0, tHeight - SECTION_GAP);
     }
 
     private int getGridMaxScroll() {
@@ -374,8 +422,21 @@ public class GuiLootBagStats extends GuiScreen {
         int tColumns = getGridColumns();
         if (!isInside(pX, pY, getContentLeft(), getGridTop(), getContentLeft() + tColumns * SLOT_SIZE, getGridBottom()))
             return null;
-        int tIndex = (pY - getGridTop() + mGridScroll) / SLOT_SIZE * tColumns + (pX - getContentLeft()) / SLOT_SIZE;
-        return tIndex < mDrops.size() ? mDrops.get(tIndex) : null;
+        int tSectionTop = getGridTop() - mGridScroll;
+        for (Section tSection : mSections) {
+            int tItemsTop = tSectionTop + SECTION_HEADER_HEIGHT;
+            if (pY >= tItemsTop && pY < tSectionTop + getSectionHeight(tSection)) {
+                int tIndex = (pY - tItemsTop) / SLOT_SIZE * tColumns + (pX - getContentLeft()) / SLOT_SIZE;
+                return tIndex < tSection.mDrops.size() ? tSection.mDrops.get(tIndex) : null;
+            }
+            tSectionTop += getSectionHeight(tSection) + SECTION_GAP;
+        }
+        return null;
+    }
+
+    private boolean isOverLuck(int pX, int pY) {
+        return getLuckPercent() >= 0
+                && isInside(pX, pY, getContentLeft(), getLuckY() - 2, getContentRight(), getLuckY() + 11);
     }
 
     private String getSortLabel() {
@@ -547,7 +608,20 @@ public class GuiLootBagStats extends GuiScreen {
         DropEntry tHovered = drawContent(pMouseX, pMouseY);
 
         if (tHovered != null) drawDropTooltip(tHovered, pMouseX, pMouseY);
-        else {
+        else if (isOverLuck(pMouseX, pMouseY)) {
+            List<String> tTip = new ArrayList<>();
+            tTip.add(
+                    String.format(
+                            StatHelper.get("gui.stats.luck_tip_title"),
+                            String.format("%.1f%%", getLuckPercent())));
+            tTip.add(String.format(StatHelper.get("gui.stats.luck_tip_main"), formatFull(getTimes(mMainDrops))));
+            tTip.add(String.format(StatHelper.get("gui.stats.luck_tip_trash"), formatFull(getTimes(mTrashDrops))));
+            @SuppressWarnings("unchecked")
+            List<String> tInfo = fontRendererObj
+                    .listFormattedStringToWidth(StatHelper.get("gui.stats.luck_tip_info"), 180);
+            for (String tLine : tInfo) tTip.add(EnumChatFormatting.GRAY + tLine);
+            drawHoveringText(tTip, pMouseX, pMouseY, fontRendererObj);
+        } else {
             BagEntry tBag = getBagAt(pMouseX, pMouseY);
             if (tBag != null && fontRendererObj.getStringWidth(tBag.mName) > getNavNameWidth(tBag)) {
                 List<String> tTip = new ArrayList<>();
@@ -656,6 +730,25 @@ public class GuiLootBagStats extends GuiScreen {
                 tY + 12,
                 isOverSortLink(pMouseX, pMouseY) ? mTheme.accent : mTheme.dim);
 
+        // Luck: share of regular loot among all drops, from red (only trash) to green (no trash)
+        double tLuck = getLuckPercent();
+        if (tLuck >= 0) {
+            int tLuckY = getLuckY();
+            int tLuckColor = getLuckColor(tLuck);
+            String tLabel = StatHelper.get("gui.stats.luck") + " ";
+            String tValue = String.format("%.1f%%", tLuck);
+            fontRendererObj.drawString(tLabel, tLeft, tLuckY, mTheme.dim);
+            int tValueX = tLeft + fontRendererObj.getStringWidth(tLabel);
+            fontRendererObj.drawString(tValue, tValueX, tLuckY, tLuckColor);
+            int tBarLeft = tValueX + fontRendererObj.getStringWidth(tValue) + 8;
+            int tBarY = tLuckY + 3;
+            if (tRight - tBarLeft > 10) {
+                drawRect(tBarLeft, tBarY, tRight, tBarY + 3, mTheme.line);
+                int tFill = (int) Math.round((tRight - tBarLeft) * tLuck / 100.0D);
+                drawRect(tBarLeft, tBarY, tBarLeft + tFill, tBarY + 3, 0xFF000000 | tLuckColor);
+            }
+        }
+
         int tGridTop = getGridTop();
         int tGridBottom = getGridBottom();
 
@@ -676,18 +769,37 @@ public class GuiLootBagStats extends GuiScreen {
             return null;
         }
 
-        // Item grid, no slot frames
+        // Item grids of the regular loot and the trash, no slot frames
         int tColumns = getGridColumns();
         DropEntry tHovered = getDropAt(pMouseX, pMouseY);
+        long tTotalTimes = getSelectedTotalTimes();
         beginScissor(tLeft, tGridTop, mRight - tLeft, tGridBottom - tGridTop);
-        for (int i = 0; i < mDrops.size(); i++) {
-            int tX = tLeft + (i % tColumns) * SLOT_SIZE;
-            int tSlotY = tGridTop + (i / tColumns) * SLOT_SIZE - mGridScroll;
-            if (tSlotY + SLOT_SIZE <= tGridTop || tSlotY >= tGridBottom) continue;
+        int tSectionTop = tGridTop - mGridScroll;
+        for (Section tSection : mSections) {
+            if (tSectionTop + SECTION_HEADER_HEIGHT > tGridTop && tSectionTop < tGridBottom) {
+                String tShare = String.format(
+                        "%s  %s",
+                        formatFull(getTimes(tSection.mDrops)),
+                        formatPercent(getTimes(tSection.mDrops), tTotalTimes));
+                fontRendererObj.drawString(tSection.mTitle, tLeft, tSectionTop + 1, mTheme.body);
+                fontRendererObj.drawString(
+                        tShare,
+                        tLeft + fontRendererObj.getStringWidth(tSection.mTitle) + 6,
+                        tSectionTop + 1,
+                        mTheme.faint);
+            }
 
-            DropEntry tDrop = mDrops.get(i);
-            if (tDrop == tHovered) drawRect(tX, tSlotY, tX + SLOT_SIZE, tSlotY + SLOT_SIZE, mTheme.hover);
-            drawItem(tDrop.mStack, tX, tSlotY, formatCompact(tDrop.mItemCount));
+            int tItemsTop = tSectionTop + SECTION_HEADER_HEIGHT;
+            for (int i = 0; i < tSection.mDrops.size(); i++) {
+                int tX = tLeft + (i % tColumns) * SLOT_SIZE;
+                int tSlotY = tItemsTop + (i / tColumns) * SLOT_SIZE;
+                if (tSlotY + SLOT_SIZE <= tGridTop || tSlotY >= tGridBottom) continue;
+
+                DropEntry tDrop = tSection.mDrops.get(i);
+                if (tDrop == tHovered) drawRect(tX, tSlotY, tX + SLOT_SIZE, tSlotY + SLOT_SIZE, mTheme.hover);
+                drawItem(tDrop.mStack, tX, tSlotY, formatCompact(tDrop.mItemCount));
+            }
+            tSectionTop += getSectionHeight(tSection) + SECTION_GAP;
         }
         endScissor();
 
@@ -756,9 +868,8 @@ public class GuiLootBagStats extends GuiScreen {
                         StatHelper.get("gui.stats.tip_per_bag"),
                         String.format("%.2f", (double) pDrop.mItemCount / tOpened)));
         if (tTotalTimes > 0) tTip.add(
-                String.format(
-                        StatHelper.get("gui.stats.tip_share"),
-                        String.format("%.1f%%", 100.0D * pDrop.mTimesDropped / tTotalTimes)));
+                String.format(StatHelper.get("gui.stats.tip_share"), formatPercent(pDrop.mTimesDropped, tTotalTimes)));
+        if (pDrop.mTrash) tTip.add(StatHelper.get("gui.stats.tip_trash"));
 
         drawHoveringText(tTip, pMouseX, pMouseY, fontRendererObj);
     }
@@ -800,6 +911,10 @@ public class GuiLootBagStats extends GuiScreen {
             default:
                 return "";
         }
+    }
+
+    private static String formatPercent(long pPart, long pTotal) {
+        return pTotal <= 0 ? "-" : String.format("%.1f%%", 100.0D * pPart / pTotal);
     }
 
     private static String formatFull(long pNumber) {
@@ -849,9 +964,11 @@ public class GuiLootBagStats extends GuiScreen {
         private final String mName;
         private long mItemCount;
         private int mTimesDropped;
+        private final boolean mTrash;
 
-        private DropEntry(ItemStack pStack) {
+        private DropEntry(ItemStack pStack, boolean pTrash) {
             mStack = pStack;
+            mTrash = pTrash;
             String tName;
             try {
                 tName = pStack.getDisplayName();
@@ -859,6 +976,17 @@ public class GuiLootBagStats extends GuiScreen {
                 tName = String.valueOf(Item.itemRegistry.getNameForObject(pStack.getItem()));
             }
             mName = tName;
+        }
+    }
+
+    private static class Section {
+
+        private final String mTitle;
+        private final List<DropEntry> mDrops;
+
+        private Section(String pTitle, List<DropEntry> pDrops) {
+            mTitle = pTitle;
+            mDrops = pDrops;
         }
     }
 }

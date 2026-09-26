@@ -57,7 +57,9 @@ public class LootBagStatsHandler {
             for (Object tKey : tRoot.func_150296_c()) {
                 String tUUID = (String) tKey;
                 try {
-                    _mPlayerStats.put(UUID.fromString(tUUID), LootBagStats.readFromNBT(tRoot.getCompoundTag(tUUID)));
+                    LootBagStats tStats = LootBagStats.readFromNBT(tRoot.getCompoundTag(tUUID));
+                    updateTrashFlags(tStats);
+                    _mPlayerStats.put(UUID.fromString(tUUID), tStats);
                 } catch (IllegalArgumentException e) {
                     _mLogger.warn(String.format("[LootBags] Skipping invalid player entry %s in %s", tUUID, FILE_NAME));
                 }
@@ -65,6 +67,18 @@ public class LootBagStatsHandler {
         } catch (Exception e) {
             _mLogger.error(String.format("[LootBags] Unable to load %s; Statistics will start fresh", FILE_NAME));
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * (Re)classify all recorded drops as trash or regular loot, based on the current loot configuration. Also fills in
+     * the flag for statistics that were recorded before it existed
+     */
+    private void updateTrashFlags(LootBagStats pStats) {
+        for (GroupStats tGroup : pStats.getGroups()) {
+            if (EnhancedLootBags.LootGroupHandler.getGroupByID(tGroup.getGroupID()) == null) continue;
+            for (LootBagStats.DropStats tDrop : tGroup.getDrops())
+                tDrop.setTrash(EnhancedLootBags.LootGroupHandler.isTrashDrop(tGroup.getGroupID(), tDrop.getDropID()));
         }
     }
 
@@ -120,8 +134,13 @@ public class LootBagStatsHandler {
     public void recordOpening(EntityPlayer pPlayer, int pGroupID, OpenRecord pRecord) {
         GroupStats tGroup = getStats(pPlayer).getOrCreateGroup(pGroupID);
         tGroup.incrementOpened();
-        for (int i = 0; i < pRecord.mDrops.size(); i++)
-            tGroup.recordDrop(pRecord.mDrops.get(i).getIdentifier(), pRecord.mStacks.get(i));
+        for (int i = 0; i < pRecord.mDrops.size(); i++) {
+            String tDropID = pRecord.mDrops.get(i).getIdentifier();
+            tGroup.recordDrop(
+                    tDropID,
+                    pRecord.mStacks.get(i),
+                    EnhancedLootBags.LootGroupHandler.isTrashDrop(pGroupID, tDropID));
+        }
         _mDirty = true;
 
         if (pPlayer instanceof EntityPlayerMP)
