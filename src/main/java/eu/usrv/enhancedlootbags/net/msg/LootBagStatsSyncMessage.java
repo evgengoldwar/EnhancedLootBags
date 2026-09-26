@@ -65,10 +65,15 @@ public class LootBagStatsSyncMessage implements IMessage {
 
         @Override
         public IMessage handleClientMessage(EntityPlayer player, LootBagStatsSyncMessage message, MessageContext ctx) {
-            if (message.payload == null) return null;
+            if (message.payload == null) {
+                return null;
+            }
 
-            if (message.fullSync) ClientLootBagStats.setStats(LootBagStats.readFromNBT(message.payload));
-            else ClientLootBagStats.updateGroup(GroupStats.readFromNBT(message.payload));
+            if (message.fullSync) {
+                ClientLootBagStats.setStats(LootBagStats.readFromNBT(message.payload));
+            } else {
+                ClientLootBagStats.updateGroup(GroupStats.readFromNBT(message.payload));
+            }
             return null;
         }
     }

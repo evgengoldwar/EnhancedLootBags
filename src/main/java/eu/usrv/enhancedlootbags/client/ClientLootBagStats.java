@@ -17,7 +17,9 @@ public class ClientLootBagStats {
 
     public static synchronized void updateGroup(GroupStats group) {
         LootBagStats copy = new LootBagStats();
-        for (GroupStats grp : stats.getGroups()) copy.putGroup(grp);
+        for (GroupStats grp : stats.getGroups()) {
+            copy.putGroup(grp);
+        }
         copy.putGroup(group);
         stats = copy;
     }

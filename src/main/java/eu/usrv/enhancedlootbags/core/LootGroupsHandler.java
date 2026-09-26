@@ -230,15 +230,31 @@ public class LootGroupsHandler {
 
     public boolean isTrashDrop(int groupID, String dropID) {
         LootGroup group = getGroupByID(groupID);
-        if (group == null) return false;
-        if (group.getTrashGroup() == groupID) return true;
-        if (!group.getCombineWithTrash()) return false;
+        if (group == null) {
+            return false;
+        }
+        if (group.getTrashGroup() == groupID) {
+            return true;
+        }
+        if (!group.getCombineWithTrash()) {
+            return false;
+        }
 
-        for (Drop drop : group.getDrops()) if (drop.getIdentifier().equals(dropID)) return false;
+        for (Drop drop : group.getDrops()) {
+            if (drop.getIdentifier().equals(dropID)) {
+                return false;
+            }
+        }
 
         LootGroup trashGroup = getGroupByID(group.getTrashGroup());
-        if (trashGroup == null) return false;
-        for (Drop drop : trashGroup.getDrops()) if (drop.getIdentifier().equals(dropID)) return true;
+        if (trashGroup == null) {
+            return false;
+        }
+        for (Drop drop : trashGroup.getDrops()) {
+            if (drop.getIdentifier().equals(dropID)) {
+                return true;
+            }
+        }
         return false;
     }
 
@@ -309,7 +325,9 @@ public class LootGroupsHandler {
             if (tState) {
                 sendClientUpdate();
                 EnhancedLootBags.statsHandler.onLootConfigReloaded();
-            } else _mLogger.error("[LootBags] Reload of LootBag file failed. Not sending client update");
+            } else {
+                _mLogger.error("[LootBags] Reload of LootBag file failed. Not sending client update");
+            }
         }
         return tState;
     }

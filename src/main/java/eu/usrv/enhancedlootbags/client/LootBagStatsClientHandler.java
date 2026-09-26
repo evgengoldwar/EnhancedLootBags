@@ -31,16 +31,22 @@ public class LootBagStatsClientHandler {
 
     @SubscribeEvent
     public void onKeyInput(InputEvent.KeyInputEvent event) {
-        if (KEY_OPEN_STATS.isPressed() && Minecraft.getMinecraft().currentScreen == null) requestOpen();
+        if (KEY_OPEN_STATS.isPressed() && Minecraft.getMinecraft().currentScreen == null) {
+            requestOpen();
+        }
     }
 
     @SubscribeEvent
     public void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || openRequestTicks <= 0) return;
+        if (event.phase != TickEvent.Phase.END || openRequestTicks <= 0) {
+            return;
+        }
 
         openRequestTicks--;
         Minecraft mc = Minecraft.getMinecraft();
-        if (mc.thePlayer == null || mc.currentScreen != null) return;
+        if (mc.thePlayer == null || mc.currentScreen != null) {
+            return;
+        }
 
         openRequestTicks = 0;
         mc.displayGuiScreen(new GuiLootBagStats());

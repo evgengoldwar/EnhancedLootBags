@@ -37,14 +37,18 @@ public class LootBagStatsHandler {
 
     private void initStorage() {
         File currentDir = DimensionManager.getCurrentSaveRootDirectory();
-        if (currentDir == null || currentDir.equals(saveDir)) return;
+        if (currentDir == null || currentDir.equals(saveDir)) {
+            return;
+        }
 
         playerStats.clear();
         dirty = false;
         saveDir = currentDir;
 
         File file = new File(currentDir, FILE_NAME);
-        if (!file.exists()) return;
+        if (!file.exists()) {
+            return;
+        }
 
         try (FileInputStream in = new FileInputStream(file)) {
             NBTTagCompound root = CompressedStreamTools.readCompressed(in);
@@ -66,15 +70,22 @@ public class LootBagStatsHandler {
 
     private void updateTrashFlags(LootBagStats stats) {
         for (GroupStats group : stats.getGroups()) {
-            if (EnhancedLootBags.LootGroupHandler.getGroupByID(group.getGroupID()) == null) continue;
-            for (LootBagStats.DropStats drop : group.getDrops())
+            if (EnhancedLootBags.LootGroupHandler.getGroupByID(group.getGroupID()) == null) {
+                continue;
+            }
+            for (LootBagStats.DropStats drop : group.getDrops()) {
                 drop.setTrash(EnhancedLootBags.LootGroupHandler.isTrashDrop(group.getGroupID(), drop.getDropID()));
+            }
         }
     }
 
     public void onLootConfigReloaded() {
-        if (saveDir == null) return;
-        for (LootBagStats stats : playerStats.values()) updateTrashFlags(stats);
+        if (saveDir == null) {
+            return;
+        }
+        for (LootBagStats stats : playerStats.values()) {
+            updateTrashFlags(stats);
+        }
         dirty = true;
 
         for (Object player : MinecraftServer.getServer().getConfigurationManager().playerEntityList) {
@@ -84,11 +95,15 @@ public class LootBagStatsHandler {
     }
 
     public void save() {
-        if (!dirty || saveDir == null) return;
+        if (!dirty || saveDir == null) {
+            return;
+        }
 
         NBTTagCompound root = new NBTTagCompound();
         for (Map.Entry<UUID, LootBagStats> entry : playerStats.entrySet()) {
-            if (entry.getValue().getGroups().isEmpty()) continue;
+            if (entry.getValue().getGroups().isEmpty()) {
+                continue;
+            }
             root.setTag(entry.getKey().toString(), entry.getValue().writeToNBT());
         }
 
@@ -98,8 +113,12 @@ public class LootBagStatsHandler {
             try (FileOutputStream out = new FileOutputStream(tmpFile)) {
                 CompressedStreamTools.writeCompressed(root, out);
             }
-            if (file.exists() && !file.delete()) throw new IllegalStateException("Unable to replace " + file);
-            if (!tmpFile.renameTo(file)) throw new IllegalStateException("Unable to rename " + tmpFile);
+            if (file.exists() && !file.delete()) {
+                throw new IllegalStateException("Unable to replace " + file);
+            }
+            if (!tmpFile.renameTo(file)) {
+                throw new IllegalStateException("Unable to rename " + tmpFile);
+            }
             dirty = false;
         } catch (Exception e) {
             logger.error(String.format("[LootBags] Unable to save %s", FILE_NAME));
@@ -136,19 +155,24 @@ public class LootBagStatsHandler {
         }
         dirty = true;
 
-        if (player instanceof EntityPlayerMP)
+        if (player instanceof EntityPlayerMP) {
             EnhancedLootBags.NW.sendTo(LootBagStatsSyncMessage.partial(group), (EntityPlayerMP) player);
+        }
     }
 
     @SubscribeEvent
     public void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
-        if (event.player instanceof EntityPlayerMP) EnhancedLootBags.NW
-                .sendTo(LootBagStatsSyncMessage.full(getStats(event.player)), (EntityPlayerMP) event.player);
+        if (event.player instanceof EntityPlayerMP) {
+            EnhancedLootBags.NW
+                    .sendTo(LootBagStatsSyncMessage.full(getStats(event.player)), (EntityPlayerMP) event.player);
+        }
     }
 
     @SubscribeEvent
     public void onWorldSave(WorldEvent.Save event) {
-        if (!event.world.isRemote && event.world.provider.dimensionId == 0) save();
+        if (!event.world.isRemote && event.world.provider.dimensionId == 0) {
+            save();
+        }
     }
 
     public static class OpenRecord {

@@ -45,14 +45,18 @@ public class LootBagStats {
 
     public long getTotalOpened() {
         long total = 0;
-        for (GroupStats grp : groups.values()) total += grp.getOpened();
+        for (GroupStats grp : groups.values()) {
+            total += grp.getOpened();
+        }
         return total;
     }
 
     public NBTTagCompound writeToNBT() {
         NBTTagCompound tag = new NBTTagCompound();
         NBTTagList groupList = new NBTTagList();
-        for (GroupStats grp : groups.values()) groupList.appendTag(grp.writeToNBT());
+        for (GroupStats grp : groups.values()) {
+            groupList.appendTag(grp.writeToNBT());
+        }
         tag.setTag(NBT_GROUPS, groupList);
         return tag;
     }
@@ -60,8 +64,9 @@ public class LootBagStats {
     public static LootBagStats readFromNBT(NBTTagCompound tag) {
         LootBagStats stats = new LootBagStats();
         NBTTagList groupList = tag.getTagList(NBT_GROUPS, 10);
-        for (int i = 0; i < groupList.tagCount(); i++)
+        for (int i = 0; i < groupList.tagCount(); i++) {
             stats.putGroup(GroupStats.readFromNBT(groupList.getCompoundTagAt(i)));
+        }
         return stats;
     }
 
@@ -108,7 +113,9 @@ public class LootBagStats {
             tag.setInteger(NBT_GROUP_ID, groupID);
             tag.setInteger(NBT_OPENED, opened);
             NBTTagList dropList = new NBTTagList();
-            for (DropStats drop : drops.values()) dropList.appendTag(drop.writeToNBT());
+            for (DropStats drop : drops.values()) {
+                dropList.appendTag(drop.writeToNBT());
+            }
             tag.setTag(NBT_DROPS, dropList);
             return tag;
         }
