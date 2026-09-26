@@ -26,7 +26,6 @@ import org.lwjgl.opengl.GL12;
 import eu.usrv.enhancedlootbags.EnhancedLootBags;
 import eu.usrv.enhancedlootbags.StatHelper;
 import eu.usrv.enhancedlootbags.client.ClientLootBagStats;
-import eu.usrv.enhancedlootbags.client.ClientSettings;
 import eu.usrv.enhancedlootbags.client.LootBagStatsClientHandler;
 import eu.usrv.enhancedlootbags.core.LootGroupsHandler;
 import eu.usrv.enhancedlootbags.core.serializer.LootGroups;
@@ -51,42 +50,15 @@ public class GuiLootBagStats extends GuiScreen {
     private static final int SECTION_HEADER_HEIGHT = 13;
     private static final int SECTION_GAP = 8;
 
-    private enum Theme {
-
-        DARK(0xE8121212, 0x30FFFFFF, 0x18FFFFFF, 0x00D5FF, 0xFFFFFF, 0xD2D2D2, 0x808080, 0x505050, 0x50FFFFFF,
-                EnumChatFormatting.WHITE, EnumChatFormatting.GRAY),
-        LIGHT(0xF0EDEDED, 0x30000000, 0x14000000, 0x0078B4, 0x1A1A1A, 0x3A3A3A, 0x6E6E6E, 0xA0A0A0, 0x50000000,
-                EnumChatFormatting.BLACK, EnumChatFormatting.DARK_GRAY);
-
-        private final int background;
-        private final int line;
-        private final int hover;
-        private final int accent;
-        private final int text;
-        private final int body;
-        private final int dim;
-        private final int faint;
-        private final int scrollbar;
-
-        private final EnumChatFormatting numberFormat;
-        private final EnumChatFormatting labelFormat;
-
-        Theme(int background, int line, int hover, int accent, int text, int body, int dim, int faint, int scrollbar,
-                EnumChatFormatting numberFormat, EnumChatFormatting labelFormat) {
-            this.background = background;
-            this.line = line;
-            this.hover = hover;
-            this.accent = accent;
-            this.text = text;
-            this.body = body;
-            this.dim = dim;
-            this.faint = faint;
-            this.scrollbar = scrollbar;
-            this.numberFormat = numberFormat;
-            this.labelFormat = labelFormat;
-        }
-    }
-
+    private static final int COLOR_BACKGROUND = 0xE8121212;
+    private static final int COLOR_LINE = 0x30FFFFFF;
+    private static final int COLOR_HOVER = 0x18FFFFFF;
+    private static final int COLOR_ACCENT = 0x00D5FF;
+    private static final int COLOR_TEXT = 0xFFFFFF;
+    private static final int COLOR_BODY = 0xD2D2D2;
+    private static final int COLOR_DIM = 0x808080;
+    private static final int COLOR_FAINT = 0x505050;
+    private static final int COLOR_SCROLLBAR = 0x50FFFFFF;
     private static final int COLOR_OUTSIDE = 0x80000000;
 
     private enum SortMode {
@@ -98,8 +70,6 @@ public class GuiLootBagStats extends GuiScreen {
     private static int selectedID = ALL_BAGS_ID;
     private static boolean showUnopened = true;
     private static SortMode sortMode = SortMode.AMOUNT;
-
-    private Theme theme = Theme.DARK;
 
     private int panelLeft;
     private int panelRight;
@@ -132,8 +102,6 @@ public class GuiLootBagStats extends GuiScreen {
         panelTop = margin;
         panelBottom = height - margin;
 
-        theme = ClientSettings.isLightTheme() ? Theme.LIGHT : Theme.DARK;
-
         Keyboard.enableRepeatEvents(true);
         String oldSearch = searchField == null ? "" : searchField.getText();
         searchField = new GuiTextField(
@@ -144,7 +112,7 @@ public class GuiLootBagStats extends GuiScreen {
                 10);
         searchField.setEnableBackgroundDrawing(false);
         searchField.setMaxStringLength(64);
-        searchField.setTextColor(theme.body);
+        searchField.setTextColor(COLOR_BODY);
         searchField.setText(oldSearch);
 
         reloadStats();
@@ -430,16 +398,6 @@ public class GuiLootBagStats extends GuiScreen {
         return isInside(x, y, getContentRight() - textWidth - 1, linkY - 1, getContentRight() + 1, linkY + 9);
     }
 
-    private String getThemeLabel() {
-        return StatHelper.get(theme == Theme.DARK ? "gui.stats.theme_dark" : "gui.stats.theme_light");
-    }
-
-    private boolean isOverThemeLink(int x, int y) {
-        int textWidth = fontRendererObj.getStringWidth(getThemeLabel());
-        int right = panelRight - PADDING;
-        return isInside(x, y, right - textWidth - 1, panelTop + 7, right + 1, panelTop + 17);
-    }
-
     private boolean isOverFilterLink(int x, int y) {
         int linkY = panelBottom - NAV_FOOTER_HEIGHT + 4;
         int textWidth = fontRendererObj.getStringWidth(getFilterLabel());
@@ -478,12 +436,6 @@ public class GuiLootBagStats extends GuiScreen {
         }
         if (button != 0) return;
 
-        if (isOverThemeLink(x, y)) {
-            theme = theme == Theme.DARK ? Theme.LIGHT : Theme.DARK;
-            ClientSettings.setLightTheme(theme == Theme.LIGHT);
-            searchField.setTextColor(theme.body);
-            return;
-        }
         if (isOverFilterLink(x, y)) {
             showUnopened = !showUnopened;
             updateVisibleBags();
@@ -546,29 +498,22 @@ public class GuiLootBagStats extends GuiScreen {
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         drawRect(0, 0, width, height, COLOR_OUTSIDE);
-        drawRect(panelLeft, panelTop, panelRight, panelBottom, theme.background);
+        drawRect(panelLeft, panelTop, panelRight, panelBottom, COLOR_BACKGROUND);
 
-        drawRect(panelLeft, panelTop, panelRight, panelTop + 1, theme.line);
-        drawRect(panelLeft, panelBottom - 1, panelRight, panelBottom, theme.line);
-        drawRect(panelLeft, panelTop + 1, panelLeft + 1, panelBottom - 1, theme.line);
-        drawRect(panelRight - 1, panelTop + 1, panelRight, panelBottom - 1, theme.line);
+        drawRect(panelLeft, panelTop, panelRight, panelTop + 1, COLOR_LINE);
+        drawRect(panelLeft, panelBottom - 1, panelRight, panelBottom, COLOR_LINE);
+        drawRect(panelLeft, panelTop + 1, panelLeft + 1, panelBottom - 1, COLOR_LINE);
+        drawRect(panelRight - 1, panelTop + 1, panelRight, panelBottom - 1, COLOR_LINE);
 
-        fontRendererObj.drawString(StatHelper.get("gui.stats.title"), panelLeft + PADDING, panelTop + 8, theme.text);
-        String themeLabel = getThemeLabel();
-        int themeWidth = fontRendererObj.getStringWidth(themeLabel);
-        fontRendererObj.drawString(
-                themeLabel,
-                panelRight - PADDING - themeWidth,
-                panelTop + 8,
-                isOverThemeLink(mouseX, mouseY) ? theme.accent : theme.dim);
+        fontRendererObj.drawString(StatHelper.get("gui.stats.title"), panelLeft + PADDING, panelTop + 8, COLOR_TEXT);
         String total = String.format(StatHelper.get("gui.stats.total_opened"), formatFull(stats.getTotalOpened()));
         fontRendererObj.drawString(
                 total,
-                panelRight - PADDING - themeWidth - 12 - fontRendererObj.getStringWidth(total),
+                panelRight - PADDING - fontRendererObj.getStringWidth(total),
                 panelTop + 8,
-                theme.dim);
-        drawRect(panelLeft, getHeaderBottom() - 1, panelRight, getHeaderBottom(), theme.line);
-        drawRect(panelLeft + NAV_WIDTH - 1, getHeaderBottom(), panelLeft + NAV_WIDTH, panelBottom, theme.line);
+                COLOR_DIM);
+        drawRect(panelLeft, getHeaderBottom() - 1, panelRight, getHeaderBottom(), COLOR_LINE);
+        drawRect(panelLeft + NAV_WIDTH - 1, getHeaderBottom(), panelLeft + NAV_WIDTH, panelBottom, COLOR_LINE);
 
         drawNavigation(mouseX, mouseY);
         DropEntry hovered = drawContent(mouseX, mouseY);
@@ -612,7 +557,7 @@ public class GuiLootBagStats extends GuiScreen {
                     StatHelper.get("gui.stats.search"),
                     searchField.xPosition,
                     searchField.yPosition,
-                    theme.faint);
+                    COLOR_FAINT);
         }
         int lineY = getHeaderBottom() + 17;
         drawRect(
@@ -620,7 +565,7 @@ public class GuiLootBagStats extends GuiScreen {
                 lineY,
                 panelLeft + NAV_WIDTH - PADDING,
                 lineY + 1,
-                searchField.isFocused() ? 0xFF000000 | theme.accent : theme.line);
+                searchField.isFocused() ? 0xFF000000 | COLOR_ACCENT : COLOR_LINE);
 
         int top = getNavTop();
         int bottom = getNavBottom();
@@ -635,12 +580,12 @@ public class GuiLootBagStats extends GuiScreen {
             boolean selected = entry == selectedBag;
             boolean opened = entry.id == ALL_BAGS_ID || entry.getOpened() > 0;
 
-            if (selected) drawRect(panelLeft, y, panelLeft + 2, y + NAV_ROW_HEIGHT, 0xFF000000 | theme.accent);
-            if (entry == hovered) drawRect(panelLeft, y, panelLeft + NAV_WIDTH - 1, y + NAV_ROW_HEIGHT, theme.hover);
+            if (selected) drawRect(panelLeft, y, panelLeft + 2, y + NAV_ROW_HEIGHT, 0xFF000000 | COLOR_ACCENT);
+            if (entry == hovered) drawRect(panelLeft, y, panelLeft + NAV_WIDTH - 1, y + NAV_ROW_HEIGHT, COLOR_HOVER);
 
             drawItem(entry.icon, panelLeft + PADDING - 2, y + 1, null);
 
-            int nameColor = selected ? theme.text : entry == hovered ? theme.accent : opened ? theme.body : theme.dim;
+            int nameColor = selected ? COLOR_TEXT : entry == hovered ? COLOR_ACCENT : opened ? COLOR_BODY : COLOR_DIM;
             fontRendererObj.drawString(
                     fontRendererObj.trimStringToWidth(entry.name, getNavNameWidth(entry)),
                     panelLeft + PADDING + 18,
@@ -651,7 +596,7 @@ public class GuiLootBagStats extends GuiScreen {
                     count,
                     panelLeft + NAV_WIDTH - 6 - fontRendererObj.getStringWidth(count),
                     y + 5,
-                    opened ? theme.dim : theme.faint);
+                    opened ? COLOR_DIM : COLOR_FAINT);
         }
         endScissor();
 
@@ -662,7 +607,7 @@ public class GuiLootBagStats extends GuiScreen {
                 filter,
                 panelLeft + PADDING,
                 panelBottom - NAV_FOOTER_HEIGHT + 4,
-                isOverFilterLink(mouseX, mouseY) ? theme.accent : theme.dim);
+                isOverFilterLink(mouseX, mouseY) ? COLOR_ACCENT : COLOR_DIM);
     }
 
     private DropEntry drawContent(int mouseX, int mouseY) {
@@ -671,11 +616,11 @@ public class GuiLootBagStats extends GuiScreen {
         int y = getHeaderBottom() + PADDING;
 
         fontRendererObj.drawString(
-                getRarityFormat(selectedBag.rarity) + fontRendererObj.trimStringToWidth(selectedBag.name, right - left),
+                selectedBag.rarity.rarityColor + fontRendererObj.trimStringToWidth(selectedBag.name, right - left),
                 left,
                 y,
-                theme.text);
-        String summary = theme.labelFormat + String.format(
+                COLOR_TEXT);
+        String summary = EnumChatFormatting.GRAY + String.format(
                 StatHelper.get("gui.stats.summary"),
                 highlight(formatFull(getSelectedOpened())),
                 highlight(formatFull(getSelectedTotalItems())),
@@ -686,9 +631,9 @@ public class GuiLootBagStats extends GuiScreen {
                 fontRendererObj.trimStringToWidth(summary, right - left - sortWidth - 8),
                 left,
                 y + 12,
-                theme.dim);
+                COLOR_DIM);
         if (!drops.isEmpty()) fontRendererObj
-                .drawString(sort, right - sortWidth, y + 12, isOverSortLink(mouseX, mouseY) ? theme.accent : theme.dim);
+                .drawString(sort, right - sortWidth, y + 12, isOverSortLink(mouseX, mouseY) ? COLOR_ACCENT : COLOR_DIM);
 
         double luck = getLuckPercent();
         if (luck >= 0) {
@@ -696,13 +641,13 @@ public class GuiLootBagStats extends GuiScreen {
             int luckColor = getLuckColor(luck);
             String label = StatHelper.get("gui.stats.luck") + " ";
             String value = String.format("%.1f%%", luck);
-            fontRendererObj.drawString(label, left, luckY, theme.dim);
+            fontRendererObj.drawString(label, left, luckY, COLOR_DIM);
             int valueX = left + fontRendererObj.getStringWidth(label);
             fontRendererObj.drawString(value, valueX, luckY, luckColor);
             int barLeft = valueX + fontRendererObj.getStringWidth(value) + 8;
             int barY = luckY + 3;
             if (right - barLeft > 10) {
-                drawRect(barLeft, barY, right, barY + 3, theme.line);
+                drawRect(barLeft, barY, right, barY + 3, COLOR_LINE);
                 int fill = (int) Math.round((right - barLeft) * luck / 100.0D);
                 drawRect(barLeft, barY, barLeft + fill, barY + 3, 0xFF000000 | luckColor);
             }
@@ -722,7 +667,7 @@ public class GuiLootBagStats extends GuiScreen {
                         line,
                         (left + right - fontRendererObj.getStringWidth(line)) / 2,
                         textY,
-                        theme.faint);
+                        COLOR_FAINT);
                 textY += 10;
             }
             return null;
@@ -739,12 +684,12 @@ public class GuiLootBagStats extends GuiScreen {
                         "%s  %s",
                         formatFull(getTimes(section.drops)),
                         formatPercent(getTimes(section.drops), totalTimes));
-                fontRendererObj.drawString(section.title, left, sectionTop + 1, theme.body);
+                fontRendererObj.drawString(section.title, left, sectionTop + 1, COLOR_BODY);
                 fontRendererObj.drawString(
                         share,
                         left + fontRendererObj.getStringWidth(section.title) + 6,
                         sectionTop + 1,
-                        theme.faint);
+                        COLOR_FAINT);
             }
 
             int itemsTop = sectionTop + SECTION_HEADER_HEIGHT;
@@ -754,7 +699,7 @@ public class GuiLootBagStats extends GuiScreen {
                 if (slotY + SLOT_SIZE <= gridTop || slotY >= gridBottom) continue;
 
                 DropEntry drop = section.drops.get(i);
-                if (drop == hovered) drawRect(x, slotY, x + SLOT_SIZE, slotY + SLOT_SIZE, theme.hover);
+                if (drop == hovered) drawRect(x, slotY, x + SLOT_SIZE, slotY + SLOT_SIZE, COLOR_HOVER);
                 drawItem(drop.stack, x, slotY, formatCompact(drop.itemCount));
             }
             sectionTop += getSectionHeight(section) + SECTION_GAP;
@@ -771,7 +716,7 @@ public class GuiLootBagStats extends GuiScreen {
         if (maxScroll <= 0) return;
         int thumbHeight = Math.max(10, viewHeight * viewHeight / contentHeight);
         int thumbTop = top + (viewHeight - thumbHeight) * scroll / maxScroll;
-        drawRect(x, thumbTop, x + 2, thumbTop + thumbHeight, theme.scrollbar);
+        drawRect(x, thumbTop, x + 2, thumbTop + thumbHeight, COLOR_SCROLLBAR);
     }
 
     private void drawItem(ItemStack stack, int x, int y, String overlay) {
@@ -840,21 +785,7 @@ public class GuiLootBagStats extends GuiScreen {
     }
 
     private String highlight(String number) {
-        return theme.numberFormat + number + theme.labelFormat;
-    }
-
-    private String getRarityFormat(EnumRarity rarity) {
-        if (theme == Theme.DARK) return rarity.rarityColor.toString();
-        switch (rarity) {
-            case uncommon:
-                return EnumChatFormatting.GOLD.toString();
-            case rare:
-                return EnumChatFormatting.DARK_AQUA.toString();
-            case epic:
-                return EnumChatFormatting.DARK_PURPLE.toString();
-            default:
-                return "";
-        }
+        return EnumChatFormatting.WHITE + number + EnumChatFormatting.GRAY;
     }
 
     private static String formatPercent(long part, long total) {

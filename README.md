@@ -16,8 +16,7 @@ by the modpack) on the left, and the selected bag (or all bags combined) with it
 on the right. The received items are split into the bag's own loot and the trash (everything that comes from the
 trash group, meta 0 by default, that is merged into the bag). The luck bar shows the share of regular loot among all
 drops, from red (0%, only trash) to green (100%, no trash). Hover over an item for details. Left click on the sort link cycles the sort order forward, right click
-backwards. The link in the header switches between a dark and a light theme; the choice is saved in
-`config/EnhancedLootBags/EnhancedLootBags_client.cfg`.
+backwards.
 The tooltip of a LootBag also shows how often you have opened that kind of bag.
 
 # How to use Lootbag Commands
