@@ -4,6 +4,17 @@ LootBags redefined.
 # Copyright / License / Modpack usage
 You may use this mod in any modpack you want to. You may also fork this repository and continue to develop this mod to cover your own ideas. Pullrequests are welcome.
 
+# LootBag statistics
+
+Every opened LootBag is tracked per player: how many bags of each kind have been opened, and every item that dropped
+out of them (total amount and how often it dropped). The data is stored per world in `LootBagStats.dat`.
+
+Open the statistics screen with the `/lootbagstats` (or `/lbstats`) client command, or bind a key to
+"LootBag statistics" in the controls menu (category "Enhanced LootBags"; unbound by default).
+The screen lists all LootBags known to the server (including every group registered by the modpack), can be searched
+and filtered, and shows the drops of the selected bag, or of all bags combined. Hover over an item for details.
+The tooltip of a LootBag also shows how often you have opened that kind of bag.
+
 # How to use Lootbag Commands
 
 I copy past this from The old Forum.
