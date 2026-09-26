@@ -793,14 +793,14 @@ public class GuiLootBagStats extends GuiScreen {
     }
 
     private static String formatFull(long number) {
-        return String.format("%,d", number);
+        return String.format(Locale.ROOT, "%,d", number).replace(',', ' ');
     }
 
     private static String formatCompact(long number) {
         if (number < 1000) return Long.toString(number);
-        if (number < 10000) return String.format(Locale.ROOT, "%.1fk", number / 1000.0D);
+        if (number < 10000) return (number / 1000) + "." + (number / 100 % 10) + "k";
         if (number < 1000000) return (number / 1000) + "k";
-        if (number < 10000000) return String.format(Locale.ROOT, "%.1fM", number / 1000000.0D);
+        if (number < 10000000) return (number / 1000000) + "." + (number / 100000 % 10) + "M";
         if (number < 1000000000) return (number / 1000000) + "M";
         return (number / 1000000000) + "G";
     }
