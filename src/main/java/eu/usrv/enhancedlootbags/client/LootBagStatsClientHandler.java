@@ -23,31 +23,31 @@ public class LootBagStatsClientHandler {
             Keyboard.KEY_NONE,
             "enhancedlootbags.key.category");
 
-    private static int sOpenRequestTicks = 0;
+    private static int openRequestTicks = 0;
 
     public static void requestOpen() {
-        sOpenRequestTicks = 20;
+        openRequestTicks = 20;
     }
 
     @SubscribeEvent
-    public void onKeyInput(InputEvent.KeyInputEvent pEvent) {
+    public void onKeyInput(InputEvent.KeyInputEvent event) {
         if (KEY_OPEN_STATS.isPressed() && Minecraft.getMinecraft().currentScreen == null) requestOpen();
     }
 
     @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent pEvent) {
-        if (pEvent.phase != TickEvent.Phase.END || sOpenRequestTicks <= 0) return;
+    public void onClientTick(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END || openRequestTicks <= 0) return;
 
-        sOpenRequestTicks--;
-        Minecraft tMC = Minecraft.getMinecraft();
-        if (tMC.thePlayer == null || tMC.currentScreen != null) return;
+        openRequestTicks--;
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc.thePlayer == null || mc.currentScreen != null) return;
 
-        sOpenRequestTicks = 0;
-        tMC.displayGuiScreen(new GuiLootBagStats());
+        openRequestTicks = 0;
+        mc.displayGuiScreen(new GuiLootBagStats());
     }
 
     @SubscribeEvent
-    public void onDisconnect(FMLNetworkEvent.ClientDisconnectionFromServerEvent pEvent) {
+    public void onDisconnect(FMLNetworkEvent.ClientDisconnectionFromServerEvent event) {
         ClientLootBagStats.clear();
     }
 
@@ -64,7 +64,7 @@ public class LootBagStatsClientHandler {
         }
 
         @Override
-        public String getCommandUsage(ICommandSender pSender) {
+        public String getCommandUsage(ICommandSender sender) {
             return "/lootbagstats";
         }
 
@@ -74,12 +74,12 @@ public class LootBagStatsClientHandler {
         }
 
         @Override
-        public boolean canCommandSenderUseCommand(ICommandSender pSender) {
+        public boolean canCommandSenderUseCommand(ICommandSender sender) {
             return true;
         }
 
         @Override
-        public void processCommand(ICommandSender pSender, String[] pArgs) {
+        public void processCommand(ICommandSender sender, String[] args) {
             requestOpen();
         }
     }

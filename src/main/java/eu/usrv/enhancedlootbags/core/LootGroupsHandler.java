@@ -228,17 +228,17 @@ public class LootGroupsHandler {
         return null;
     }
 
-    public boolean isTrashDrop(int pGroupID, String pDropID) {
-        LootGroup tGroup = getGroupByID(pGroupID);
-        if (tGroup == null) return false;
-        if (tGroup.getTrashGroup() == pGroupID) return true;
-        if (!tGroup.getCombineWithTrash()) return false;
+    public boolean isTrashDrop(int groupID, String dropID) {
+        LootGroup group = getGroupByID(groupID);
+        if (group == null) return false;
+        if (group.getTrashGroup() == groupID) return true;
+        if (!group.getCombineWithTrash()) return false;
 
-        for (Drop tDrop : tGroup.getDrops()) if (tDrop.getIdentifier().equals(pDropID)) return false;
+        for (Drop drop : group.getDrops()) if (drop.getIdentifier().equals(dropID)) return false;
 
-        LootGroup tTrashGroup = getGroupByID(tGroup.getTrashGroup());
-        if (tTrashGroup == null) return false;
-        for (Drop tDrop : tTrashGroup.getDrops()) if (tDrop.getIdentifier().equals(pDropID)) return true;
+        LootGroup trashGroup = getGroupByID(group.getTrashGroup());
+        if (trashGroup == null) return false;
+        for (Drop drop : trashGroup.getDrops()) if (drop.getIdentifier().equals(dropID)) return true;
         return false;
     }
 

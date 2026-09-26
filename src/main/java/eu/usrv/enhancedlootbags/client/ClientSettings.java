@@ -13,23 +13,23 @@ public class ClientSettings {
     private static final String CATEGORY_GUI = "gui";
     private static final String KEY_LIGHT_THEME = "StatisticsLightTheme";
 
-    private static Configuration sConfig = null;
+    private static Configuration config = null;
 
     private static Configuration getConfig() {
-        if (sConfig == null) {
-            File tDir = new File(Loader.instance().getConfigDir(), EnhancedLootBags.NICEFOLDERNAME);
-            if (!tDir.exists()) tDir.mkdirs();
-            sConfig = new Configuration(new File(tDir, EnhancedLootBags.NICEFOLDERNAME + "_client.cfg"));
-            sConfig.load();
+        if (config == null) {
+            File dir = new File(Loader.instance().getConfigDir(), EnhancedLootBags.NICEFOLDERNAME);
+            if (!dir.exists()) dir.mkdirs();
+            config = new Configuration(new File(dir, EnhancedLootBags.NICEFOLDERNAME + "_client.cfg"));
+            config.load();
 
             getLightThemeProperty();
-            if (sConfig.hasChanged()) sConfig.save();
+            if (config.hasChanged()) config.save();
         }
-        return sConfig;
+        return config;
     }
 
     private static Property getLightThemeProperty() {
-        return sConfig.get(
+        return config.get(
                 CATEGORY_GUI,
                 KEY_LIGHT_THEME,
                 false,
@@ -41,9 +41,9 @@ public class ClientSettings {
         return getLightThemeProperty().getBoolean(false);
     }
 
-    public static void setLightTheme(boolean pLightTheme) {
+    public static void setLightTheme(boolean lightTheme) {
         getConfig();
-        getLightThemeProperty().set(pLightTheme);
-        sConfig.save();
+        getLightThemeProperty().set(lightTheme);
+        config.save();
     }
 }

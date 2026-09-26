@@ -143,11 +143,11 @@ public class ItemLootBag extends Item {
                 int q = tGrp.getMinItems();
                 if (tGrp.getMaxItems() > tGrp.getMinItems()) q = pWorld.rand.nextInt(tGrp.getMaxItems()) + 1;
 
-                OpenRecord tRecord = new OpenRecord();
+                OpenRecord openRecord = new OpenRecord();
                 // _mLogger.info(String.format("MinMax %d / %d", tGrp.mMinItems, tGrp.mMaxItems));
                 while (q > 0) {
                     // _mLogger.info(String.format("q: %d", q));
-                    List<ItemStack> isList = getRandomLootItems(pPlayer, tGrp, tRecord);
+                    List<ItemStack> isList = getRandomLootItems(pPlayer, tGrp, openRecord);
                     if (isList.isEmpty()) {
                         PlayerChatHelper.SendNotifyWarning(pPlayer, StatHelper.get("string.try_again"));
                         return pStack;
@@ -178,7 +178,7 @@ public class ItemLootBag extends Item {
                         0.75F,
                         1.0F);
                 pStack.stackSize -= 1;
-                EnhancedLootBags.StatsHandler.recordOpening(pPlayer, tGroupID, tRecord);
+                EnhancedLootBags.statsHandler.recordOpening(pPlayer, tGroupID, openRecord);
             } else {
                 PlayerChatHelper.SendNotifyWarning(pPlayer, StatHelper.get("string.sorry_damaged"));
             }
@@ -186,7 +186,7 @@ public class ItemLootBag extends Item {
         return pStack;
     }
 
-    private List<ItemStack> getRandomLootItems(EntityPlayer player, LootGroup pGrp, OpenRecord pRecord) {
+    private List<ItemStack> getRandomLootItems(EntityPlayer player, LootGroup pGrp, OpenRecord openRecord) {
         List<ItemStack> tReturnList = new ArrayList<ItemStack>();
         List<Drop> tPendingDrops = new ArrayList<Drop>();
 
@@ -253,7 +253,7 @@ public class ItemLootBag extends Item {
                                         td.getItemName()));
                         continue;
                     }
-                    pRecord.add(td, tStackAll);
+                    openRecord.add(td, tStackAll);
                     while (tStackAll.stackSize > tStackAll.getMaxStackSize())
                         tReturnList.add(tStackAll.splitStack(tStackAll.getMaxStackSize()));
                     tReturnList.add(tStackAll);
@@ -294,12 +294,12 @@ public class ItemLootBag extends Item {
             }
         }
 
-        GroupStats tStats = ClientLootBagStats.getStats().getGroup(pItemStack.getItemDamage());
-        int tKeyCode = LootBagStatsClientHandler.KEY_OPEN_STATS.getKeyCode();
+        GroupStats groupStats = ClientLootBagStats.getStats().getGroup(pItemStack.getItemDamage());
+        int keyCode = LootBagStatsClientHandler.KEY_OPEN_STATS.getKeyCode();
         pTooltipList.add(
                 String.format(
                         StatHelper.get("string.stats_opened"),
-                        tStats == null ? 0 : tStats.getOpened(),
-                        tKeyCode == 0 ? "/lootbagstats" : GameSettings.getKeyDisplayString(tKeyCode)));
+                        groupStats == null ? 0 : groupStats.getOpened(),
+                        keyCode == 0 ? "/lootbagstats" : GameSettings.getKeyDisplayString(keyCode)));
     }
 }

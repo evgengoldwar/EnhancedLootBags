@@ -20,171 +20,171 @@ public class LootBagStats {
     private static final String NBT_DROP_TIMES = "Times";
     private static final String NBT_DROP_TRASH = "Trash";
 
-    private final Map<Integer, GroupStats> _mGroups = new LinkedHashMap<>();
+    private final Map<Integer, GroupStats> groups = new LinkedHashMap<>();
 
-    public GroupStats getGroup(int pGroupID) {
-        return _mGroups.get(pGroupID);
+    public GroupStats getGroup(int groupID) {
+        return groups.get(groupID);
     }
 
-    public GroupStats getOrCreateGroup(int pGroupID) {
-        GroupStats tStats = _mGroups.get(pGroupID);
-        if (tStats == null) {
-            tStats = new GroupStats(pGroupID);
-            _mGroups.put(pGroupID, tStats);
+    public GroupStats getOrCreateGroup(int groupID) {
+        GroupStats stats = groups.get(groupID);
+        if (stats == null) {
+            stats = new GroupStats(groupID);
+            groups.put(groupID, stats);
         }
-        return tStats;
+        return stats;
     }
 
-    public void putGroup(GroupStats pStats) {
-        _mGroups.put(pStats.getGroupID(), pStats);
+    public void putGroup(GroupStats stats) {
+        groups.put(stats.getGroupID(), stats);
     }
 
     public Collection<GroupStats> getGroups() {
-        return _mGroups.values();
+        return groups.values();
     }
 
     public long getTotalOpened() {
-        long tTotal = 0;
-        for (GroupStats tGrp : _mGroups.values()) tTotal += tGrp.getOpened();
-        return tTotal;
+        long total = 0;
+        for (GroupStats grp : groups.values()) total += grp.getOpened();
+        return total;
     }
 
     public NBTTagCompound writeToNBT() {
-        NBTTagCompound tTag = new NBTTagCompound();
-        NBTTagList tGroups = new NBTTagList();
-        for (GroupStats tGrp : _mGroups.values()) tGroups.appendTag(tGrp.writeToNBT());
-        tTag.setTag(NBT_GROUPS, tGroups);
-        return tTag;
+        NBTTagCompound tag = new NBTTagCompound();
+        NBTTagList groupList = new NBTTagList();
+        for (GroupStats grp : groups.values()) groupList.appendTag(grp.writeToNBT());
+        tag.setTag(NBT_GROUPS, groupList);
+        return tag;
     }
 
-    public static LootBagStats readFromNBT(NBTTagCompound pTag) {
-        LootBagStats tStats = new LootBagStats();
-        NBTTagList tGroups = pTag.getTagList(NBT_GROUPS, 10);
-        for (int i = 0; i < tGroups.tagCount(); i++)
-            tStats.putGroup(GroupStats.readFromNBT(tGroups.getCompoundTagAt(i)));
-        return tStats;
+    public static LootBagStats readFromNBT(NBTTagCompound tag) {
+        LootBagStats stats = new LootBagStats();
+        NBTTagList groupList = tag.getTagList(NBT_GROUPS, 10);
+        for (int i = 0; i < groupList.tagCount(); i++)
+            stats.putGroup(GroupStats.readFromNBT(groupList.getCompoundTagAt(i)));
+        return stats;
     }
 
     public static class GroupStats {
 
-        private final int _mGroupID;
-        private int _mOpened;
-        private final Map<String, DropStats> _mDrops = new LinkedHashMap<>();
+        private final int groupID;
+        private int opened;
+        private final Map<String, DropStats> drops = new LinkedHashMap<>();
 
-        public GroupStats(int pGroupID) {
-            _mGroupID = pGroupID;
+        public GroupStats(int groupID) {
+            this.groupID = groupID;
         }
 
         public int getGroupID() {
-            return _mGroupID;
+            return groupID;
         }
 
         public int getOpened() {
-            return _mOpened;
+            return opened;
         }
 
         public void incrementOpened() {
-            _mOpened++;
+            opened++;
         }
 
         public Collection<DropStats> getDrops() {
-            return _mDrops.values();
+            return drops.values();
         }
 
-        public void recordDrop(String pDropID, ItemStack pStack, boolean pTrash) {
-            DropStats tDrop = _mDrops.get(pDropID);
-            if (tDrop == null) {
-                ItemStack tDisplay = pStack.copy();
-                tDisplay.stackSize = 1;
-                tDrop = new DropStats(pDropID, tDisplay.writeToNBT(new NBTTagCompound()));
-                _mDrops.put(pDropID, tDrop);
+        public void recordDrop(String dropID, ItemStack stack, boolean trash) {
+            DropStats drop = drops.get(dropID);
+            if (drop == null) {
+                ItemStack display = stack.copy();
+                display.stackSize = 1;
+                drop = new DropStats(dropID, display.writeToNBT(new NBTTagCompound()));
+                drops.put(dropID, drop);
             }
-            tDrop.add(pStack.stackSize);
-            tDrop.setTrash(pTrash);
+            drop.add(stack.stackSize);
+            drop.setTrash(trash);
         }
 
         public NBTTagCompound writeToNBT() {
-            NBTTagCompound tTag = new NBTTagCompound();
-            tTag.setInteger(NBT_GROUP_ID, _mGroupID);
-            tTag.setInteger(NBT_OPENED, _mOpened);
-            NBTTagList tDrops = new NBTTagList();
-            for (DropStats tDrop : _mDrops.values()) tDrops.appendTag(tDrop.writeToNBT());
-            tTag.setTag(NBT_DROPS, tDrops);
-            return tTag;
+            NBTTagCompound tag = new NBTTagCompound();
+            tag.setInteger(NBT_GROUP_ID, groupID);
+            tag.setInteger(NBT_OPENED, opened);
+            NBTTagList dropList = new NBTTagList();
+            for (DropStats drop : drops.values()) dropList.appendTag(drop.writeToNBT());
+            tag.setTag(NBT_DROPS, dropList);
+            return tag;
         }
 
-        public static GroupStats readFromNBT(NBTTagCompound pTag) {
-            GroupStats tStats = new GroupStats(pTag.getInteger(NBT_GROUP_ID));
-            tStats._mOpened = pTag.getInteger(NBT_OPENED);
-            NBTTagList tDrops = pTag.getTagList(NBT_DROPS, 10);
-            for (int i = 0; i < tDrops.tagCount(); i++) {
-                DropStats tDrop = DropStats.readFromNBT(tDrops.getCompoundTagAt(i));
-                tStats._mDrops.put(tDrop.getDropID(), tDrop);
+        public static GroupStats readFromNBT(NBTTagCompound tag) {
+            GroupStats stats = new GroupStats(tag.getInteger(NBT_GROUP_ID));
+            stats.opened = tag.getInteger(NBT_OPENED);
+            NBTTagList dropList = tag.getTagList(NBT_DROPS, 10);
+            for (int i = 0; i < dropList.tagCount(); i++) {
+                DropStats drop = DropStats.readFromNBT(dropList.getCompoundTagAt(i));
+                stats.drops.put(drop.getDropID(), drop);
             }
-            return tStats;
+            return stats;
         }
     }
 
     public static class DropStats {
 
-        private final String _mDropID;
-        private final NBTTagCompound _mStackTag;
-        private final ItemStack _mDisplayStack;
-        private long _mItemCount;
-        private int _mTimesDropped;
-        private boolean _mTrash;
+        private final String dropID;
+        private final NBTTagCompound stackTag;
+        private final ItemStack displayStack;
+        private long itemCount;
+        private int timesDropped;
+        private boolean trash;
 
-        private DropStats(String pDropID, NBTTagCompound pStackTag) {
-            _mDropID = pDropID;
-            _mStackTag = pStackTag;
-            _mDisplayStack = ItemStack.loadItemStackFromNBT(pStackTag);
+        private DropStats(String dropID, NBTTagCompound stackTag) {
+            this.dropID = dropID;
+            this.stackTag = stackTag;
+            displayStack = ItemStack.loadItemStackFromNBT(stackTag);
         }
 
         public String getDropID() {
-            return _mDropID;
+            return dropID;
         }
 
         public ItemStack getDisplayStack() {
-            return _mDisplayStack;
+            return displayStack;
         }
 
         public long getItemCount() {
-            return _mItemCount;
+            return itemCount;
         }
 
         public int getTimesDropped() {
-            return _mTimesDropped;
+            return timesDropped;
         }
 
         public boolean isTrash() {
-            return _mTrash;
+            return trash;
         }
 
-        public void setTrash(boolean pTrash) {
-            _mTrash = pTrash;
+        public void setTrash(boolean trash) {
+            this.trash = trash;
         }
 
-        public void add(long pItemCount) {
-            _mItemCount += pItemCount;
-            _mTimesDropped++;
+        public void add(long amount) {
+            itemCount += amount;
+            timesDropped++;
         }
 
         public NBTTagCompound writeToNBT() {
-            NBTTagCompound tTag = new NBTTagCompound();
-            tTag.setString(NBT_DROP_ID, _mDropID);
-            tTag.setTag(NBT_DROP_STACK, _mStackTag);
-            tTag.setLong(NBT_DROP_ITEMS, _mItemCount);
-            tTag.setInteger(NBT_DROP_TIMES, _mTimesDropped);
-            tTag.setBoolean(NBT_DROP_TRASH, _mTrash);
-            return tTag;
+            NBTTagCompound tag = new NBTTagCompound();
+            tag.setString(NBT_DROP_ID, dropID);
+            tag.setTag(NBT_DROP_STACK, stackTag);
+            tag.setLong(NBT_DROP_ITEMS, itemCount);
+            tag.setInteger(NBT_DROP_TIMES, timesDropped);
+            tag.setBoolean(NBT_DROP_TRASH, trash);
+            return tag;
         }
 
-        public static DropStats readFromNBT(NBTTagCompound pTag) {
-            DropStats tDrop = new DropStats(pTag.getString(NBT_DROP_ID), pTag.getCompoundTag(NBT_DROP_STACK));
-            tDrop._mItemCount = pTag.getLong(NBT_DROP_ITEMS);
-            tDrop._mTimesDropped = pTag.getInteger(NBT_DROP_TIMES);
-            tDrop._mTrash = pTag.getBoolean(NBT_DROP_TRASH);
-            return tDrop;
+        public static DropStats readFromNBT(NBTTagCompound tag) {
+            DropStats drop = new DropStats(tag.getString(NBT_DROP_ID), tag.getCompoundTag(NBT_DROP_STACK));
+            drop.itemCount = tag.getLong(NBT_DROP_ITEMS);
+            drop.timesDropped = tag.getInteger(NBT_DROP_TIMES);
+            drop.trash = tag.getBoolean(NBT_DROP_TRASH);
+            return drop;
         }
     }
 }

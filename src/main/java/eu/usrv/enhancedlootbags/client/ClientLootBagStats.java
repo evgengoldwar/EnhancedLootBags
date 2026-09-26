@@ -5,24 +5,24 @@ import eu.usrv.enhancedlootbags.core.stats.LootBagStats.GroupStats;
 
 public class ClientLootBagStats {
 
-    private static volatile LootBagStats sStats = new LootBagStats();
+    private static volatile LootBagStats stats = new LootBagStats();
 
     public static LootBagStats getStats() {
-        return sStats;
+        return stats;
     }
 
-    public static synchronized void setStats(LootBagStats pStats) {
-        sStats = pStats;
+    public static synchronized void setStats(LootBagStats newStats) {
+        stats = newStats;
     }
 
-    public static synchronized void updateGroup(GroupStats pGroup) {
-        LootBagStats tCopy = new LootBagStats();
-        for (GroupStats tGrp : sStats.getGroups()) tCopy.putGroup(tGrp);
-        tCopy.putGroup(pGroup);
-        sStats = tCopy;
+    public static synchronized void updateGroup(GroupStats group) {
+        LootBagStats copy = new LootBagStats();
+        for (GroupStats grp : stats.getGroups()) copy.putGroup(grp);
+        copy.putGroup(group);
+        stats = copy;
     }
 
     public static synchronized void clear() {
-        sStats = new LootBagStats();
+        stats = new LootBagStats();
     }
 }

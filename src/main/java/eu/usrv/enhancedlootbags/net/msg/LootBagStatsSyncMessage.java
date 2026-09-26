@@ -18,44 +18,44 @@ import io.netty.buffer.ByteBuf;
 
 public class LootBagStatsSyncMessage implements IMessage {
 
-    protected boolean _mFullSync;
-    protected NBTTagCompound _mPayload;
+    protected boolean fullSync;
+    protected NBTTagCompound payload;
 
     public LootBagStatsSyncMessage() {}
 
-    private LootBagStatsSyncMessage(boolean pFullSync, NBTTagCompound pPayload) {
-        _mFullSync = pFullSync;
-        _mPayload = pPayload;
+    private LootBagStatsSyncMessage(boolean fullSync, NBTTagCompound payload) {
+        this.fullSync = fullSync;
+        this.payload = payload;
     }
 
-    public static LootBagStatsSyncMessage full(LootBagStats pStats) {
-        return new LootBagStatsSyncMessage(true, pStats.writeToNBT());
+    public static LootBagStatsSyncMessage full(LootBagStats stats) {
+        return new LootBagStatsSyncMessage(true, stats.writeToNBT());
     }
 
-    public static LootBagStatsSyncMessage partial(GroupStats pGroup) {
-        return new LootBagStatsSyncMessage(false, pGroup.writeToNBT());
+    public static LootBagStatsSyncMessage partial(GroupStats group) {
+        return new LootBagStatsSyncMessage(false, group.writeToNBT());
     }
 
     @Override
-    public void fromBytes(ByteBuf pBuffer) {
-        _mFullSync = pBuffer.readBoolean();
-        byte[] tData = new byte[pBuffer.readInt()];
-        pBuffer.readBytes(tData);
+    public void fromBytes(ByteBuf buffer) {
+        fullSync = buffer.readBoolean();
+        byte[] data = new byte[buffer.readInt()];
+        buffer.readBytes(data);
         try {
-            _mPayload = CompressedStreamTools.readCompressed(new ByteArrayInputStream(tData));
+            payload = CompressedStreamTools.readCompressed(new ByteArrayInputStream(data));
         } catch (IOException e) {
             EnhancedLootBags.Logger.error("[LootBags] Received invalid statistics from server");
-            _mPayload = null;
+            payload = null;
         }
     }
 
     @Override
-    public void toBytes(ByteBuf pBuffer) {
-        pBuffer.writeBoolean(_mFullSync);
+    public void toBytes(ByteBuf buffer) {
+        buffer.writeBoolean(fullSync);
         try {
-            byte[] tData = CompressedStreamTools.compress(_mPayload);
-            pBuffer.writeInt(tData.length);
-            pBuffer.writeBytes(tData);
+            byte[] data = CompressedStreamTools.compress(payload);
+            buffer.writeInt(data.length);
+            buffer.writeBytes(data);
         } catch (IOException e) {
             throw new RuntimeException("Unable to serialize lootbag statistics", e);
         }
@@ -64,12 +64,11 @@ public class LootBagStatsSyncMessage implements IMessage {
     public static class LootBagStatsSyncMessageHandler extends AbstractClientMessageHandler<LootBagStatsSyncMessage> {
 
         @Override
-        public IMessage handleClientMessage(EntityPlayer pPlayer, LootBagStatsSyncMessage pMessage,
-                MessageContext pCtx) {
-            if (pMessage._mPayload == null) return null;
+        public IMessage handleClientMessage(EntityPlayer player, LootBagStatsSyncMessage message, MessageContext ctx) {
+            if (message.payload == null) return null;
 
-            if (pMessage._mFullSync) ClientLootBagStats.setStats(LootBagStats.readFromNBT(pMessage._mPayload));
-            else ClientLootBagStats.updateGroup(GroupStats.readFromNBT(pMessage._mPayload));
+            if (message.fullSync) ClientLootBagStats.setStats(LootBagStats.readFromNBT(message.payload));
+            else ClientLootBagStats.updateGroup(GroupStats.readFromNBT(message.payload));
             return null;
         }
     }

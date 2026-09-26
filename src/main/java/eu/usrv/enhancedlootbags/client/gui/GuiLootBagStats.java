@@ -71,19 +71,19 @@ public class GuiLootBagStats extends GuiScreen {
         private final EnumChatFormatting numberFormat;
         private final EnumChatFormatting labelFormat;
 
-        Theme(int pBackground, int pLine, int pHover, int pAccent, int pText, int pBody, int pDim, int pFaint,
-                int pScrollbar, EnumChatFormatting pNumberFormat, EnumChatFormatting pLabelFormat) {
-            background = pBackground;
-            line = pLine;
-            hover = pHover;
-            accent = pAccent;
-            text = pText;
-            body = pBody;
-            dim = pDim;
-            faint = pFaint;
-            scrollbar = pScrollbar;
-            numberFormat = pNumberFormat;
-            labelFormat = pLabelFormat;
+        Theme(int background, int line, int hover, int accent, int text, int body, int dim, int faint, int scrollbar,
+                EnumChatFormatting numberFormat, EnumChatFormatting labelFormat) {
+            this.background = background;
+            this.line = line;
+            this.hover = hover;
+            this.accent = accent;
+            this.text = text;
+            this.body = body;
+            this.dim = dim;
+            this.faint = faint;
+            this.scrollbar = scrollbar;
+            this.numberFormat = numberFormat;
+            this.labelFormat = labelFormat;
         }
     }
 
@@ -95,57 +95,57 @@ public class GuiLootBagStats extends GuiScreen {
         NAME
     }
 
-    private static int sSelectedID = ALL_BAGS_ID;
-    private static boolean sShowUnopened = true;
-    private static SortMode sSortMode = SortMode.AMOUNT;
+    private static int selectedID = ALL_BAGS_ID;
+    private static boolean showUnopened = true;
+    private static SortMode sortMode = SortMode.AMOUNT;
 
-    private Theme mTheme = Theme.DARK;
+    private Theme theme = Theme.DARK;
 
-    private int mLeft;
-    private int mRight;
-    private int mTop;
-    private int mBottom;
+    private int panelLeft;
+    private int panelRight;
+    private int panelTop;
+    private int panelBottom;
 
-    private GuiTextField mSearchField;
+    private GuiTextField searchField;
 
-    private LootBagStats mStats;
-    private final List<BagEntry> mAllBags = new ArrayList<>();
-    private final List<BagEntry> mVisibleBags = new ArrayList<>();
-    private BagEntry mSelected;
-    private final List<DropEntry> mDrops = new ArrayList<>();
-    private final List<DropEntry> mMainDrops = new ArrayList<>();
-    private final List<DropEntry> mTrashDrops = new ArrayList<>();
-    private final List<Section> mSections = new ArrayList<>();
+    private LootBagStats stats;
+    private final List<BagEntry> allBags = new ArrayList<>();
+    private final List<BagEntry> visibleBags = new ArrayList<>();
+    private BagEntry selectedBag;
+    private final List<DropEntry> drops = new ArrayList<>();
+    private final List<DropEntry> mainDrops = new ArrayList<>();
+    private final List<DropEntry> trashDrops = new ArrayList<>();
+    private final List<Section> sections = new ArrayList<>();
 
-    private int mNavScroll = 0;
-    private int mGridScroll = 0;
-    private boolean mDraggingNav = false;
-    private boolean mDraggingGrid = false;
+    private int navScroll = 0;
+    private int gridScroll = 0;
+    private boolean draggingNav = false;
+    private boolean draggingGrid = false;
 
     @Override
     public void initGui() {
-        int tWidth = Math.min(width, MAX_SCREEN_WIDTH);
-        mLeft = (width - tWidth) / 2;
-        mRight = mLeft + tWidth;
+        int panelWidth = Math.min(width, MAX_SCREEN_WIDTH);
+        panelLeft = (width - panelWidth) / 2;
+        panelRight = panelLeft + panelWidth;
 
-        int tMargin = Math.max(8, Math.min(height / 8, 40));
-        mTop = tMargin;
-        mBottom = height - tMargin;
+        int margin = Math.max(8, Math.min(height / 8, 40));
+        panelTop = margin;
+        panelBottom = height - margin;
 
-        mTheme = ClientSettings.isLightTheme() ? Theme.LIGHT : Theme.DARK;
+        theme = ClientSettings.isLightTheme() ? Theme.LIGHT : Theme.DARK;
 
         Keyboard.enableRepeatEvents(true);
-        String tOldSearch = mSearchField == null ? "" : mSearchField.getText();
-        mSearchField = new GuiTextField(
+        String oldSearch = searchField == null ? "" : searchField.getText();
+        searchField = new GuiTextField(
                 fontRendererObj,
-                mLeft + PADDING,
+                panelLeft + PADDING,
                 getHeaderBottom() + 6,
                 NAV_WIDTH - 2 * PADDING,
                 10);
-        mSearchField.setEnableBackgroundDrawing(false);
-        mSearchField.setMaxStringLength(64);
-        mSearchField.setTextColor(mTheme.body);
-        mSearchField.setText(tOldSearch);
+        searchField.setEnableBackgroundDrawing(false);
+        searchField.setMaxStringLength(64);
+        searchField.setTextColor(theme.body);
+        searchField.setText(oldSearch);
 
         reloadStats();
     }
@@ -162,46 +162,46 @@ public class GuiLootBagStats extends GuiScreen {
 
     @Override
     public void updateScreen() {
-        mSearchField.updateCursorCounter();
+        searchField.updateCursorCounter();
 
-        if (ClientLootBagStats.getStats() != mStats) reloadStats();
+        if (ClientLootBagStats.getStats() != stats) reloadStats();
     }
 
     private void reloadStats() {
-        mStats = ClientLootBagStats.getStats();
-        mAllBags.clear();
+        stats = ClientLootBagStats.getStats();
+        allBags.clear();
 
-        Map<Integer, BagEntry> tByID = new HashMap<>();
-        LootGroups tGroups = EnhancedLootBags.LootGroupHandler.getLootGroupsClient();
-        if (tGroups != null) {
-            for (LootGroup tGrp : tGroups.getLootTable()) {
-                BagEntry tEntry = new BagEntry(
-                        tGrp.getGroupID(),
-                        StatCollector.translateToLocal(tGrp.getGroupName()),
-                        tGrp.getGroupRarity(),
-                        createBagStack(tGrp.getGroupID()),
-                        mStats.getGroup(tGrp.getGroupID()));
-                tByID.put(tEntry.mID, tEntry);
-                mAllBags.add(tEntry);
+        Map<Integer, BagEntry> byID = new HashMap<>();
+        LootGroups groups = EnhancedLootBags.LootGroupHandler.getLootGroupsClient();
+        if (groups != null) {
+            for (LootGroup grp : groups.getLootTable()) {
+                BagEntry entry = new BagEntry(
+                        grp.getGroupID(),
+                        StatCollector.translateToLocal(grp.getGroupName()),
+                        grp.getGroupRarity(),
+                        createBagStack(grp.getGroupID()),
+                        stats.getGroup(grp.getGroupID()));
+                byID.put(entry.id, entry);
+                allBags.add(entry);
             }
         }
 
-        for (GroupStats tGrpStats : mStats.getGroups()) {
-            if (tByID.containsKey(tGrpStats.getGroupID())) continue;
-            BagEntry tEntry = new BagEntry(
-                    tGrpStats.getGroupID(),
-                    String.format(StatHelper.get("gui.stats.unknown_bag"), tGrpStats.getGroupID()),
+        for (GroupStats grpStats : stats.getGroups()) {
+            if (byID.containsKey(grpStats.getGroupID())) continue;
+            BagEntry entry = new BagEntry(
+                    grpStats.getGroupID(),
+                    String.format(StatHelper.get("gui.stats.unknown_bag"), grpStats.getGroupID()),
                     EnumRarity.common,
-                    createBagStack(tGrpStats.getGroupID()),
-                    tGrpStats);
-            tByID.put(tEntry.mID, tEntry);
-            mAllBags.add(tEntry);
+                    createBagStack(grpStats.getGroupID()),
+                    grpStats);
+            byID.put(entry.id, entry);
+            allBags.add(entry);
         }
 
-        mAllBags.sort(
+        allBags.sort(
                 Comparator.comparingInt((BagEntry e) -> -e.getOpened())
-                        .thenComparing(e -> e.mName, String.CASE_INSENSITIVE_ORDER));
-        mAllBags.add(
+                        .thenComparing(e -> e.name, String.CASE_INSENSITIVE_ORDER));
+        allBags.add(
                 0,
                 new BagEntry(
                         ALL_BAGS_ID,
@@ -212,122 +212,122 @@ public class GuiLootBagStats extends GuiScreen {
 
         updateVisibleBags();
 
-        mSelected = mAllBags.get(0);
-        for (BagEntry tEntry : mAllBags) if (tEntry.mID == sSelectedID) mSelected = tEntry;
+        selectedBag = allBags.get(0);
+        for (BagEntry entry : allBags) if (entry.id == selectedID) selectedBag = entry;
         updateDrops();
     }
 
-    private static ItemStack createBagStack(int pGroupID) {
-        Item tBag = LootGroupsHandler.getLootBagItem();
-        return tBag == null ? new ItemStack(Blocks.chest) : new ItemStack(tBag, 1, pGroupID);
+    private static ItemStack createBagStack(int groupID) {
+        Item bag = LootGroupsHandler.getLootBagItem();
+        return bag == null ? new ItemStack(Blocks.chest) : new ItemStack(bag, 1, groupID);
     }
 
     private void updateVisibleBags() {
-        mVisibleBags.clear();
-        String tFilter = mSearchField.getText().trim().toLowerCase(Locale.ROOT);
-        for (BagEntry tEntry : mAllBags) {
-            if (tEntry.mID != ALL_BAGS_ID) {
-                if (!sShowUnopened && tEntry.getOpened() == 0) continue;
-                if (!tFilter.isEmpty() && !tEntry.mName.toLowerCase(Locale.ROOT).contains(tFilter)) continue;
+        visibleBags.clear();
+        String filter = searchField.getText().trim().toLowerCase(Locale.ROOT);
+        for (BagEntry entry : allBags) {
+            if (entry.id != ALL_BAGS_ID) {
+                if (!showUnopened && entry.getOpened() == 0) continue;
+                if (!filter.isEmpty() && !entry.name.toLowerCase(Locale.ROOT).contains(filter)) continue;
             }
-            mVisibleBags.add(tEntry);
+            visibleBags.add(entry);
         }
-        mNavScroll = clamp(mNavScroll, 0, getNavMaxScroll());
+        navScroll = clamp(navScroll, 0, getNavMaxScroll());
     }
 
     private void updateDrops() {
-        mDrops.clear();
-        if (mSelected.mID == ALL_BAGS_ID) {
-            Map<String, DropEntry> tMerged = new HashMap<>();
-            for (GroupStats tGrp : mStats.getGroups()) {
-                for (DropStats tDrop : tGrp.getDrops()) {
-                    if (tDrop.getDisplayStack() == null) continue;
-                    String tKey = (tDrop.isTrash() ? "T:" : "M:") + getStackKey(tDrop.getDisplayStack());
-                    DropEntry tEntry = tMerged.get(tKey);
-                    if (tEntry == null) {
-                        tEntry = new DropEntry(tDrop.getDisplayStack(), tDrop.isTrash());
-                        tMerged.put(tKey, tEntry);
-                        mDrops.add(tEntry);
+        drops.clear();
+        if (selectedBag.id == ALL_BAGS_ID) {
+            Map<String, DropEntry> merged = new HashMap<>();
+            for (GroupStats grp : stats.getGroups()) {
+                for (DropStats drop : grp.getDrops()) {
+                    if (drop.getDisplayStack() == null) continue;
+                    String key = (drop.isTrash() ? "T:" : "M:") + getStackKey(drop.getDisplayStack());
+                    DropEntry entry = merged.get(key);
+                    if (entry == null) {
+                        entry = new DropEntry(drop.getDisplayStack(), drop.isTrash());
+                        merged.put(key, entry);
+                        drops.add(entry);
                     }
-                    tEntry.mItemCount += tDrop.getItemCount();
-                    tEntry.mTimesDropped += tDrop.getTimesDropped();
+                    entry.itemCount += drop.getItemCount();
+                    entry.timesDropped += drop.getTimesDropped();
                 }
             }
-        } else if (mSelected.mStats != null) {
-            for (DropStats tDrop : mSelected.mStats.getDrops()) {
-                if (tDrop.getDisplayStack() == null) continue;
-                DropEntry tEntry = new DropEntry(tDrop.getDisplayStack(), tDrop.isTrash());
-                tEntry.mItemCount = tDrop.getItemCount();
-                tEntry.mTimesDropped = tDrop.getTimesDropped();
-                mDrops.add(tEntry);
+        } else if (selectedBag.stats != null) {
+            for (DropStats drop : selectedBag.stats.getDrops()) {
+                if (drop.getDisplayStack() == null) continue;
+                DropEntry entry = new DropEntry(drop.getDisplayStack(), drop.isTrash());
+                entry.itemCount = drop.getItemCount();
+                entry.timesDropped = drop.getTimesDropped();
+                drops.add(entry);
             }
         }
 
-        switch (sSortMode) {
+        switch (sortMode) {
             case AMOUNT:
-                mDrops.sort(Comparator.comparingLong((DropEntry e) -> -e.mItemCount).thenComparing(e -> e.mName));
+                drops.sort(Comparator.comparingLong((DropEntry e) -> -e.itemCount).thenComparing(e -> e.name));
                 break;
             case TIMES:
-                mDrops.sort(Comparator.comparingInt((DropEntry e) -> -e.mTimesDropped).thenComparing(e -> e.mName));
+                drops.sort(Comparator.comparingInt((DropEntry e) -> -e.timesDropped).thenComparing(e -> e.name));
                 break;
             case NAME:
-                mDrops.sort(Comparator.comparing((DropEntry e) -> e.mName, String.CASE_INSENSITIVE_ORDER));
+                drops.sort(Comparator.comparing((DropEntry e) -> e.name, String.CASE_INSENSITIVE_ORDER));
                 break;
         }
 
-        mMainDrops.clear();
-        mTrashDrops.clear();
-        for (DropEntry tDrop : mDrops) (tDrop.mTrash ? mTrashDrops : mMainDrops).add(tDrop);
-        mSections.clear();
-        if (!mMainDrops.isEmpty()) mSections.add(new Section(StatHelper.get("gui.stats.section_main"), mMainDrops));
-        if (!mTrashDrops.isEmpty()) mSections.add(new Section(StatHelper.get("gui.stats.section_trash"), mTrashDrops));
-        mGridScroll = clamp(mGridScroll, 0, getGridMaxScroll());
+        mainDrops.clear();
+        trashDrops.clear();
+        for (DropEntry drop : drops) (drop.trash ? trashDrops : mainDrops).add(drop);
+        sections.clear();
+        if (!mainDrops.isEmpty()) sections.add(new Section(StatHelper.get("gui.stats.section_main"), mainDrops));
+        if (!trashDrops.isEmpty()) sections.add(new Section(StatHelper.get("gui.stats.section_trash"), trashDrops));
+        gridScroll = clamp(gridScroll, 0, getGridMaxScroll());
     }
 
-    private static String getStackKey(ItemStack pStack) {
+    private static String getStackKey(ItemStack stack) {
         return String.format(
                 "%s:%d:%s",
-                Item.itemRegistry.getNameForObject(pStack.getItem()),
-                pStack.getItemDamage(),
-                pStack.stackTagCompound == null ? "" : pStack.stackTagCompound.toString());
+                Item.itemRegistry.getNameForObject(stack.getItem()),
+                stack.getItemDamage(),
+                stack.stackTagCompound == null ? "" : stack.stackTagCompound.toString());
     }
 
     private long getSelectedOpened() {
-        return mSelected.mID == ALL_BAGS_ID ? mStats.getTotalOpened() : mSelected.getOpened();
+        return selectedBag.id == ALL_BAGS_ID ? stats.getTotalOpened() : selectedBag.getOpened();
     }
 
     private long getSelectedTotalItems() {
-        long tTotal = 0;
-        for (DropEntry tDrop : mDrops) tTotal += tDrop.mItemCount;
-        return tTotal;
+        long total = 0;
+        for (DropEntry drop : drops) total += drop.itemCount;
+        return total;
     }
 
     private long getSelectedTotalTimes() {
-        return getTimes(mDrops);
+        return getTimes(drops);
     }
 
-    private static long getTimes(List<DropEntry> pDrops) {
-        long tTotal = 0;
-        for (DropEntry tDrop : pDrops) tTotal += tDrop.mTimesDropped;
-        return tTotal;
+    private static long getTimes(List<DropEntry> drops) {
+        long total = 0;
+        for (DropEntry drop : drops) total += drop.timesDropped;
+        return total;
     }
 
     private double getLuckPercent() {
-        long tTotal = getSelectedTotalTimes();
-        return tTotal == 0 ? -1 : 100.0D * getTimes(mMainDrops) / tTotal;
+        long total = getSelectedTotalTimes();
+        return total == 0 ? -1 : 100.0D * getTimes(mainDrops) / total;
     }
 
-    private static int getLuckColor(double pPercent) {
-        double tValue = Math.max(0, Math.min(100, pPercent)) / 100.0D;
-        int tRed = 0xE0;
-        int tGreen = 0xC8;
-        int tR = tValue < 0.5D ? tRed : (int) (tRed * (1.0D - tValue) * 2.0D + 0x30 * (tValue - 0.5D) * 2.0D);
-        int tG = tValue < 0.5D ? (int) (0x30 + (tGreen - 0x30) * tValue * 2.0D) : tGreen;
-        return (tR & 255) << 16 | (tG & 255) << 8 | 0x30;
+    private static int getLuckColor(double percent) {
+        double value = Math.max(0, Math.min(100, percent)) / 100.0D;
+        int red = 0xE0;
+        int green = 0xC8;
+        int r = value < 0.5D ? red : (int) (red * (1.0D - value) * 2.0D + 0x30 * (value - 0.5D) * 2.0D);
+        int g = value < 0.5D ? (int) (0x30 + (green - 0x30) * value * 2.0D) : green;
+        return (r & 255) << 16 | (g & 255) << 8 | 0x30;
     }
 
     private int getHeaderBottom() {
-        return mTop + HEADER_HEIGHT;
+        return panelTop + HEADER_HEIGHT;
     }
 
     private int getNavTop() {
@@ -335,19 +335,19 @@ public class GuiLootBagStats extends GuiScreen {
     }
 
     private int getNavBottom() {
-        return mBottom - NAV_FOOTER_HEIGHT;
+        return panelBottom - NAV_FOOTER_HEIGHT;
     }
 
     private int getNavMaxScroll() {
-        return Math.max(0, mVisibleBags.size() * NAV_ROW_HEIGHT - (getNavBottom() - getNavTop()));
+        return Math.max(0, visibleBags.size() * NAV_ROW_HEIGHT - (getNavBottom() - getNavTop()));
     }
 
     private int getContentLeft() {
-        return mLeft + NAV_WIDTH + PADDING;
+        return panelLeft + NAV_WIDTH + PADDING;
     }
 
     private int getContentRight() {
-        return mRight - PADDING;
+        return panelRight - PADDING;
     }
 
     private int getLuckY() {
@@ -359,426 +359,422 @@ public class GuiLootBagStats extends GuiScreen {
     }
 
     private int getGridBottom() {
-        return mBottom - PADDING;
+        return panelBottom - PADDING;
     }
 
     private int getGridColumns() {
         return Math.max(1, (getContentRight() - getContentLeft()) / SLOT_SIZE);
     }
 
-    private int getSectionHeight(Section pSection) {
-        return SECTION_HEADER_HEIGHT + (pSection.mDrops.size() + getGridColumns() - 1) / getGridColumns() * SLOT_SIZE;
+    private int getSectionHeight(Section section) {
+        return SECTION_HEADER_HEIGHT + (section.drops.size() + getGridColumns() - 1) / getGridColumns() * SLOT_SIZE;
     }
 
     private int getGridContentHeight() {
-        int tHeight = 0;
-        for (Section tSection : mSections) tHeight += getSectionHeight(tSection) + SECTION_GAP;
-        return Math.max(0, tHeight - SECTION_GAP);
+        int contentHeight = 0;
+        for (Section section : sections) contentHeight += getSectionHeight(section) + SECTION_GAP;
+        return Math.max(0, contentHeight - SECTION_GAP);
     }
 
     private int getGridMaxScroll() {
         return Math.max(0, getGridContentHeight() - (getGridBottom() - getGridTop()));
     }
 
-    private static int clamp(int pValue, int pMin, int pMax) {
-        return Math.max(pMin, Math.min(pValue, pMax));
+    private static int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(value, max));
     }
 
-    private static boolean isInside(int pX, int pY, int pLeft, int pTop, int pRight, int pBottom) {
-        return pX >= pLeft && pX < pRight && pY >= pTop && pY < pBottom;
+    private static boolean isInside(int x, int y, int left, int top, int right, int bottom) {
+        return x >= left && x < right && y >= top && y < bottom;
     }
 
-    private BagEntry getBagAt(int pX, int pY) {
-        if (!isInside(pX, pY, mLeft, getNavTop(), mLeft + NAV_WIDTH, getNavBottom())) return null;
-        int tIndex = (pY - getNavTop() + mNavScroll) / NAV_ROW_HEIGHT;
-        return tIndex < mVisibleBags.size() ? mVisibleBags.get(tIndex) : null;
+    private BagEntry getBagAt(int x, int y) {
+        if (!isInside(x, y, panelLeft, getNavTop(), panelLeft + NAV_WIDTH, getNavBottom())) return null;
+        int index = (y - getNavTop() + navScroll) / NAV_ROW_HEIGHT;
+        return index < visibleBags.size() ? visibleBags.get(index) : null;
     }
 
-    private DropEntry getDropAt(int pX, int pY) {
-        int tColumns = getGridColumns();
-        if (!isInside(pX, pY, getContentLeft(), getGridTop(), getContentLeft() + tColumns * SLOT_SIZE, getGridBottom()))
+    private DropEntry getDropAt(int x, int y) {
+        int columns = getGridColumns();
+        if (!isInside(x, y, getContentLeft(), getGridTop(), getContentLeft() + columns * SLOT_SIZE, getGridBottom()))
             return null;
-        int tSectionTop = getGridTop() - mGridScroll;
-        for (Section tSection : mSections) {
-            int tItemsTop = tSectionTop + SECTION_HEADER_HEIGHT;
-            if (pY >= tItemsTop && pY < tSectionTop + getSectionHeight(tSection)) {
-                int tIndex = (pY - tItemsTop) / SLOT_SIZE * tColumns + (pX - getContentLeft()) / SLOT_SIZE;
-                return tIndex < tSection.mDrops.size() ? tSection.mDrops.get(tIndex) : null;
+        int sectionTop = getGridTop() - gridScroll;
+        for (Section section : sections) {
+            int itemsTop = sectionTop + SECTION_HEADER_HEIGHT;
+            if (y >= itemsTop && y < sectionTop + getSectionHeight(section)) {
+                int index = (y - itemsTop) / SLOT_SIZE * columns + (x - getContentLeft()) / SLOT_SIZE;
+                return index < section.drops.size() ? section.drops.get(index) : null;
             }
-            tSectionTop += getSectionHeight(tSection) + SECTION_GAP;
+            sectionTop += getSectionHeight(section) + SECTION_GAP;
         }
         return null;
     }
 
-    private boolean isOverLuck(int pX, int pY) {
+    private boolean isOverLuck(int x, int y) {
         return getLuckPercent() >= 0
-                && isInside(pX, pY, getContentLeft(), getLuckY() - 2, getContentRight(), getLuckY() + 11);
+                && isInside(x, y, getContentLeft(), getLuckY() - 2, getContentRight(), getLuckY() + 11);
     }
 
     private String getSortLabel() {
-        return StatHelper.get("gui.stats.sort_" + sSortMode.name().toLowerCase(Locale.ROOT));
+        return StatHelper.get("gui.stats.sort_" + sortMode.name().toLowerCase(Locale.ROOT));
     }
 
     private String getFilterLabel() {
-        return StatHelper.get(sShowUnopened ? "gui.stats.filter_all" : "gui.stats.filter_opened");
+        return StatHelper.get(showUnopened ? "gui.stats.filter_all" : "gui.stats.filter_opened");
     }
 
-    private boolean isOverSortLink(int pX, int pY) {
-        if (mDrops.isEmpty()) return false;
-        int tWidth = fontRendererObj.getStringWidth(getSortLabel());
-        int tY = getHeaderBottom() + PADDING + 12;
-        return isInside(pX, pY, getContentRight() - tWidth - 1, tY - 1, getContentRight() + 1, tY + 9);
+    private boolean isOverSortLink(int x, int y) {
+        if (drops.isEmpty()) return false;
+        int textWidth = fontRendererObj.getStringWidth(getSortLabel());
+        int linkY = getHeaderBottom() + PADDING + 12;
+        return isInside(x, y, getContentRight() - textWidth - 1, linkY - 1, getContentRight() + 1, linkY + 9);
     }
 
     private String getThemeLabel() {
-        return StatHelper.get(mTheme == Theme.DARK ? "gui.stats.theme_dark" : "gui.stats.theme_light");
+        return StatHelper.get(theme == Theme.DARK ? "gui.stats.theme_dark" : "gui.stats.theme_light");
     }
 
-    private boolean isOverThemeLink(int pX, int pY) {
-        int tWidth = fontRendererObj.getStringWidth(getThemeLabel());
-        int tRight = mRight - PADDING;
-        return isInside(pX, pY, tRight - tWidth - 1, mTop + 7, tRight + 1, mTop + 17);
+    private boolean isOverThemeLink(int x, int y) {
+        int textWidth = fontRendererObj.getStringWidth(getThemeLabel());
+        int right = panelRight - PADDING;
+        return isInside(x, y, right - textWidth - 1, panelTop + 7, right + 1, panelTop + 17);
     }
 
-    private boolean isOverFilterLink(int pX, int pY) {
-        int tY = mBottom - NAV_FOOTER_HEIGHT + 4;
-        int tWidth = fontRendererObj.getStringWidth(getFilterLabel());
-        return isInside(pX, pY, mLeft + PADDING - 1, tY - 1, mLeft + PADDING + tWidth + 1, tY + 9);
+    private boolean isOverFilterLink(int x, int y) {
+        int linkY = panelBottom - NAV_FOOTER_HEIGHT + 4;
+        int textWidth = fontRendererObj.getStringWidth(getFilterLabel());
+        return isInside(x, y, panelLeft + PADDING - 1, linkY - 1, panelLeft + PADDING + textWidth + 1, linkY + 9);
     }
 
     @Override
-    protected void keyTyped(char pChar, int pKey) {
-        if (mSearchField.textboxKeyTyped(pChar, pKey)) {
+    protected void keyTyped(char typedChar, int keyCode) {
+        if (searchField.textboxKeyTyped(typedChar, keyCode)) {
             updateVisibleBags();
             return;
         }
 
-        if (pKey == Keyboard.KEY_ESCAPE
-                || (pKey != Keyboard.KEY_NONE && (pKey == mc.gameSettings.keyBindInventory.getKeyCode()
-                        || pKey == LootBagStatsClientHandler.KEY_OPEN_STATS.getKeyCode()))) {
+        if (keyCode == Keyboard.KEY_ESCAPE
+                || (keyCode != Keyboard.KEY_NONE && (keyCode == mc.gameSettings.keyBindInventory.getKeyCode()
+                        || keyCode == LootBagStatsClientHandler.KEY_OPEN_STATS.getKeyCode()))) {
             mc.displayGuiScreen(null);
         }
     }
 
     @Override
-    protected void mouseClicked(int pX, int pY, int pButton) {
-        mSearchField.mouseClicked(pX, pY, pButton);
+    protected void mouseClicked(int x, int y, int button) {
+        searchField.mouseClicked(x, y, button);
 
-        if (pButton == 1 && isInside(pX, pY, mLeft, getHeaderBottom(), mLeft + NAV_WIDTH, getNavTop())) {
-            mSearchField.setText("");
+        if (button == 1 && isInside(x, y, panelLeft, getHeaderBottom(), panelLeft + NAV_WIDTH, getNavTop())) {
+            searchField.setText("");
             updateVisibleBags();
             return;
         }
 
-        if ((pButton == 0 || pButton == 1) && isOverSortLink(pX, pY)) {
-            int tCount = SortMode.values().length;
-            sSortMode = SortMode.values()[(sSortMode.ordinal() + (pButton == 0 ? 1 : tCount - 1)) % tCount];
+        if ((button == 0 || button == 1) && isOverSortLink(x, y)) {
+            int count = SortMode.values().length;
+            sortMode = SortMode.values()[(sortMode.ordinal() + (button == 0 ? 1 : count - 1)) % count];
             updateDrops();
             return;
         }
-        if (pButton != 0) return;
+        if (button != 0) return;
 
-        if (isOverThemeLink(pX, pY)) {
-            mTheme = mTheme == Theme.DARK ? Theme.LIGHT : Theme.DARK;
-            ClientSettings.setLightTheme(mTheme == Theme.LIGHT);
-            mSearchField.setTextColor(mTheme.body);
+        if (isOverThemeLink(x, y)) {
+            theme = theme == Theme.DARK ? Theme.LIGHT : Theme.DARK;
+            ClientSettings.setLightTheme(theme == Theme.LIGHT);
+            searchField.setTextColor(theme.body);
             return;
         }
-        if (isOverFilterLink(pX, pY)) {
-            sShowUnopened = !sShowUnopened;
+        if (isOverFilterLink(x, y)) {
+            showUnopened = !showUnopened;
             updateVisibleBags();
             return;
         }
 
         if (getNavMaxScroll() > 0
-                && isInside(pX, pY, mLeft + NAV_WIDTH - 5, getNavTop(), mLeft + NAV_WIDTH, getNavBottom())) {
-            mDraggingNav = true;
-            mouseClickMove(pX, pY, pButton, 0);
+                && isInside(x, y, panelLeft + NAV_WIDTH - 5, getNavTop(), panelLeft + NAV_WIDTH, getNavBottom())) {
+            draggingNav = true;
+            mouseClickMove(x, y, button, 0);
             return;
         }
-        if (getGridMaxScroll() > 0 && isInside(pX, pY, mRight - 5, getGridTop(), mRight, getGridBottom())) {
-            mDraggingGrid = true;
-            mouseClickMove(pX, pY, pButton, 0);
+        if (getGridMaxScroll() > 0 && isInside(x, y, panelRight - 5, getGridTop(), panelRight, getGridBottom())) {
+            draggingGrid = true;
+            mouseClickMove(x, y, button, 0);
             return;
         }
 
-        BagEntry tBag = getBagAt(pX, pY);
-        if (tBag != null && tBag != mSelected) {
-            mSelected = tBag;
-            sSelectedID = tBag.mID;
-            mGridScroll = 0;
+        BagEntry bag = getBagAt(x, y);
+        if (bag != null && bag != selectedBag) {
+            selectedBag = bag;
+            selectedID = bag.id;
+            gridScroll = 0;
             updateDrops();
         }
     }
 
     @Override
-    protected void mouseClickMove(int pX, int pY, int pButton, long pTime) {
-        if (mDraggingNav) {
-            float tPos = (pY - getNavTop()) / (float) (getNavBottom() - getNavTop());
-            mNavScroll = clamp(Math.round(tPos * getNavMaxScroll()), 0, getNavMaxScroll());
-        } else if (mDraggingGrid) {
-            float tPos = (pY - getGridTop()) / (float) (getGridBottom() - getGridTop());
-            mGridScroll = clamp(Math.round(tPos * getGridMaxScroll()), 0, getGridMaxScroll());
+    protected void mouseClickMove(int x, int y, int button, long time) {
+        if (draggingNav) {
+            float pos = (y - getNavTop()) / (float) (getNavBottom() - getNavTop());
+            navScroll = clamp(Math.round(pos * getNavMaxScroll()), 0, getNavMaxScroll());
+        } else if (draggingGrid) {
+            float pos = (y - getGridTop()) / (float) (getGridBottom() - getGridTop());
+            gridScroll = clamp(Math.round(pos * getGridMaxScroll()), 0, getGridMaxScroll());
         }
     }
 
     @Override
-    protected void mouseMovedOrUp(int pX, int pY, int pButton) {
-        super.mouseMovedOrUp(pX, pY, pButton);
-        if (pButton >= 0) {
-            mDraggingNav = false;
-            mDraggingGrid = false;
+    protected void mouseMovedOrUp(int x, int y, int button) {
+        super.mouseMovedOrUp(x, y, button);
+        if (button >= 0) {
+            draggingNav = false;
+            draggingGrid = false;
         }
     }
 
     @Override
     public void handleMouseInput() {
         super.handleMouseInput();
-        int tWheel = Mouse.getEventDWheel();
-        if (tWheel == 0) return;
+        int wheel = Mouse.getEventDWheel();
+        if (wheel == 0) return;
 
-        int tX = Mouse.getEventX() * width / mc.displayWidth;
-        int tDelta = (tWheel > 0 ? -1 : 1) * SCROLL_STEP * (GuiScreen.isShiftKeyDown() ? 5 : 1);
-        if (tX < mLeft + NAV_WIDTH) mNavScroll = clamp(mNavScroll + tDelta, 0, getNavMaxScroll());
-        else mGridScroll = clamp(mGridScroll + tDelta, 0, getGridMaxScroll());
+        int mouseX = Mouse.getEventX() * width / mc.displayWidth;
+        int delta = (wheel > 0 ? -1 : 1) * SCROLL_STEP * (GuiScreen.isShiftKeyDown() ? 5 : 1);
+        if (mouseX < panelLeft + NAV_WIDTH) navScroll = clamp(navScroll + delta, 0, getNavMaxScroll());
+        else gridScroll = clamp(gridScroll + delta, 0, getGridMaxScroll());
     }
 
     @Override
-    public void drawScreen(int pMouseX, int pMouseY, float pPartialTicks) {
+    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         drawRect(0, 0, width, height, COLOR_OUTSIDE);
-        drawRect(mLeft, mTop, mRight, mBottom, mTheme.background);
+        drawRect(panelLeft, panelTop, panelRight, panelBottom, theme.background);
 
-        drawRect(mLeft, mTop, mRight, mTop + 1, mTheme.line);
-        drawRect(mLeft, mBottom - 1, mRight, mBottom, mTheme.line);
-        drawRect(mLeft, mTop + 1, mLeft + 1, mBottom - 1, mTheme.line);
-        drawRect(mRight - 1, mTop + 1, mRight, mBottom - 1, mTheme.line);
+        drawRect(panelLeft, panelTop, panelRight, panelTop + 1, theme.line);
+        drawRect(panelLeft, panelBottom - 1, panelRight, panelBottom, theme.line);
+        drawRect(panelLeft, panelTop + 1, panelLeft + 1, panelBottom - 1, theme.line);
+        drawRect(panelRight - 1, panelTop + 1, panelRight, panelBottom - 1, theme.line);
 
-        fontRendererObj.drawString(StatHelper.get("gui.stats.title"), mLeft + PADDING, mTop + 8, mTheme.text);
-        String tTheme = getThemeLabel();
-        int tThemeWidth = fontRendererObj.getStringWidth(tTheme);
+        fontRendererObj.drawString(StatHelper.get("gui.stats.title"), panelLeft + PADDING, panelTop + 8, theme.text);
+        String themeLabel = getThemeLabel();
+        int themeWidth = fontRendererObj.getStringWidth(themeLabel);
         fontRendererObj.drawString(
-                tTheme,
-                mRight - PADDING - tThemeWidth,
-                mTop + 8,
-                isOverThemeLink(pMouseX, pMouseY) ? mTheme.accent : mTheme.dim);
-        String tTotal = String.format(StatHelper.get("gui.stats.total_opened"), formatFull(mStats.getTotalOpened()));
+                themeLabel,
+                panelRight - PADDING - themeWidth,
+                panelTop + 8,
+                isOverThemeLink(mouseX, mouseY) ? theme.accent : theme.dim);
+        String total = String.format(StatHelper.get("gui.stats.total_opened"), formatFull(stats.getTotalOpened()));
         fontRendererObj.drawString(
-                tTotal,
-                mRight - PADDING - tThemeWidth - 12 - fontRendererObj.getStringWidth(tTotal),
-                mTop + 8,
-                mTheme.dim);
-        drawRect(mLeft, getHeaderBottom() - 1, mRight, getHeaderBottom(), mTheme.line);
-        drawRect(mLeft + NAV_WIDTH - 1, getHeaderBottom(), mLeft + NAV_WIDTH, mBottom, mTheme.line);
+                total,
+                panelRight - PADDING - themeWidth - 12 - fontRendererObj.getStringWidth(total),
+                panelTop + 8,
+                theme.dim);
+        drawRect(panelLeft, getHeaderBottom() - 1, panelRight, getHeaderBottom(), theme.line);
+        drawRect(panelLeft + NAV_WIDTH - 1, getHeaderBottom(), panelLeft + NAV_WIDTH, panelBottom, theme.line);
 
-        drawNavigation(pMouseX, pMouseY);
-        DropEntry tHovered = drawContent(pMouseX, pMouseY);
+        drawNavigation(mouseX, mouseY);
+        DropEntry hovered = drawContent(mouseX, mouseY);
 
-        if (tHovered != null) drawDropTooltip(tHovered, pMouseX, pMouseY);
-        else if (isOverLuck(pMouseX, pMouseY)) {
-            List<String> tTip = new ArrayList<>();
-            tTip.add(
+        if (hovered != null) drawDropTooltip(hovered, mouseX, mouseY);
+        else if (isOverLuck(mouseX, mouseY)) {
+            List<String> tip = new ArrayList<>();
+            tip.add(
                     String.format(
                             StatHelper.get("gui.stats.luck_tip_title"),
                             String.format("%.1f%%", getLuckPercent())));
-            tTip.add(String.format(StatHelper.get("gui.stats.luck_tip_main"), formatFull(getTimes(mMainDrops))));
-            tTip.add(String.format(StatHelper.get("gui.stats.luck_tip_trash"), formatFull(getTimes(mTrashDrops))));
+            tip.add(String.format(StatHelper.get("gui.stats.luck_tip_main"), formatFull(getTimes(mainDrops))));
+            tip.add(String.format(StatHelper.get("gui.stats.luck_tip_trash"), formatFull(getTimes(trashDrops))));
             @SuppressWarnings("unchecked")
-            List<String> tInfo = fontRendererObj
+            List<String> info = fontRendererObj
                     .listFormattedStringToWidth(StatHelper.get("gui.stats.luck_tip_info"), 180);
-            for (String tLine : tInfo) tTip.add(EnumChatFormatting.GRAY + tLine);
-            drawHoveringText(tTip, pMouseX, pMouseY, fontRendererObj);
+            for (String line : info) tip.add(EnumChatFormatting.GRAY + line);
+            drawHoveringText(tip, mouseX, mouseY, fontRendererObj);
         } else {
-            BagEntry tBag = getBagAt(pMouseX, pMouseY);
-            if (tBag != null && fontRendererObj.getStringWidth(tBag.mName) > getNavNameWidth(tBag)) {
-                List<String> tTip = new ArrayList<>();
-                tTip.add(tBag.mRarity.rarityColor + tBag.mName);
-                drawHoveringText(tTip, pMouseX, pMouseY, fontRendererObj);
+            BagEntry bag = getBagAt(mouseX, mouseY);
+            if (bag != null && fontRendererObj.getStringWidth(bag.name) > getNavNameWidth(bag)) {
+                List<String> tip = new ArrayList<>();
+                tip.add(bag.rarity.rarityColor + bag.name);
+                drawHoveringText(tip, mouseX, mouseY, fontRendererObj);
             }
         }
     }
 
-    private int getNavNameWidth(BagEntry pEntry) {
-        return NAV_WIDTH - PADDING - 22 - 6 - fontRendererObj.getStringWidth(getNavCount(pEntry));
+    private int getNavNameWidth(BagEntry entry) {
+        return NAV_WIDTH - PADDING - 22 - 6 - fontRendererObj.getStringWidth(getNavCount(entry));
     }
 
-    private String getNavCount(BagEntry pEntry) {
-        return formatCompact(pEntry.mID == ALL_BAGS_ID ? mStats.getTotalOpened() : pEntry.getOpened());
+    private String getNavCount(BagEntry entry) {
+        return formatCompact(entry.id == ALL_BAGS_ID ? stats.getTotalOpened() : entry.getOpened());
     }
 
-    private void drawNavigation(int pMouseX, int pMouseY) {
-        mSearchField.drawTextBox();
-        if (mSearchField.getText().isEmpty() && !mSearchField.isFocused()) {
+    private void drawNavigation(int mouseX, int mouseY) {
+        searchField.drawTextBox();
+        if (searchField.getText().isEmpty() && !searchField.isFocused()) {
             fontRendererObj.drawString(
                     StatHelper.get("gui.stats.search"),
-                    mSearchField.xPosition,
-                    mSearchField.yPosition,
-                    mTheme.faint);
+                    searchField.xPosition,
+                    searchField.yPosition,
+                    theme.faint);
         }
-        int tLineY = getHeaderBottom() + 17;
+        int lineY = getHeaderBottom() + 17;
         drawRect(
-                mLeft + PADDING,
-                tLineY,
-                mLeft + NAV_WIDTH - PADDING,
-                tLineY + 1,
-                mSearchField.isFocused() ? 0xFF000000 | mTheme.accent : mTheme.line);
+                panelLeft + PADDING,
+                lineY,
+                panelLeft + NAV_WIDTH - PADDING,
+                lineY + 1,
+                searchField.isFocused() ? 0xFF000000 | theme.accent : theme.line);
 
-        int tTop = getNavTop();
-        int tBottom = getNavBottom();
-        BagEntry tHovered = getBagAt(pMouseX, pMouseY);
+        int top = getNavTop();
+        int bottom = getNavBottom();
+        BagEntry hovered = getBagAt(mouseX, mouseY);
 
-        beginScissor(mLeft, tTop, NAV_WIDTH - 1, tBottom - tTop);
-        for (int i = 0; i < mVisibleBags.size(); i++) {
-            int tY = tTop + i * NAV_ROW_HEIGHT - mNavScroll;
-            if (tY + NAV_ROW_HEIGHT <= tTop || tY >= tBottom) continue;
+        beginScissor(panelLeft, top, NAV_WIDTH - 1, bottom - top);
+        for (int i = 0; i < visibleBags.size(); i++) {
+            int y = top + i * NAV_ROW_HEIGHT - navScroll;
+            if (y + NAV_ROW_HEIGHT <= top || y >= bottom) continue;
 
-            BagEntry tEntry = mVisibleBags.get(i);
-            boolean tSelected = tEntry == mSelected;
-            boolean tOpened = tEntry.mID == ALL_BAGS_ID || tEntry.getOpened() > 0;
+            BagEntry entry = visibleBags.get(i);
+            boolean selected = entry == selectedBag;
+            boolean opened = entry.id == ALL_BAGS_ID || entry.getOpened() > 0;
 
-            if (tSelected) drawRect(mLeft, tY, mLeft + 2, tY + NAV_ROW_HEIGHT, 0xFF000000 | mTheme.accent);
-            if (tEntry == tHovered) drawRect(mLeft, tY, mLeft + NAV_WIDTH - 1, tY + NAV_ROW_HEIGHT, mTheme.hover);
+            if (selected) drawRect(panelLeft, y, panelLeft + 2, y + NAV_ROW_HEIGHT, 0xFF000000 | theme.accent);
+            if (entry == hovered) drawRect(panelLeft, y, panelLeft + NAV_WIDTH - 1, y + NAV_ROW_HEIGHT, theme.hover);
 
-            drawItem(tEntry.mIcon, mLeft + PADDING - 2, tY + 1, null);
+            drawItem(entry.icon, panelLeft + PADDING - 2, y + 1, null);
 
-            int tNameColor = tSelected ? mTheme.text
-                    : tEntry == tHovered ? mTheme.accent : tOpened ? mTheme.body : mTheme.dim;
+            int nameColor = selected ? theme.text : entry == hovered ? theme.accent : opened ? theme.body : theme.dim;
             fontRendererObj.drawString(
-                    fontRendererObj.trimStringToWidth(tEntry.mName, getNavNameWidth(tEntry)),
-                    mLeft + PADDING + 18,
-                    tY + 5,
-                    tNameColor);
-            String tCount = getNavCount(tEntry);
+                    fontRendererObj.trimStringToWidth(entry.name, getNavNameWidth(entry)),
+                    panelLeft + PADDING + 18,
+                    y + 5,
+                    nameColor);
+            String count = getNavCount(entry);
             fontRendererObj.drawString(
-                    tCount,
-                    mLeft + NAV_WIDTH - 6 - fontRendererObj.getStringWidth(tCount),
-                    tY + 5,
-                    tOpened ? mTheme.dim : mTheme.faint);
+                    count,
+                    panelLeft + NAV_WIDTH - 6 - fontRendererObj.getStringWidth(count),
+                    y + 5,
+                    opened ? theme.dim : theme.faint);
         }
         endScissor();
 
-        drawScrollbar(mLeft + NAV_WIDTH - 3, tTop, tBottom, mNavScroll, mVisibleBags.size() * NAV_ROW_HEIGHT);
+        drawScrollbar(panelLeft + NAV_WIDTH - 3, top, bottom, navScroll, visibleBags.size() * NAV_ROW_HEIGHT);
 
-        String tFilter = getFilterLabel();
+        String filter = getFilterLabel();
         fontRendererObj.drawString(
-                tFilter,
-                mLeft + PADDING,
-                mBottom - NAV_FOOTER_HEIGHT + 4,
-                isOverFilterLink(pMouseX, pMouseY) ? mTheme.accent : mTheme.dim);
+                filter,
+                panelLeft + PADDING,
+                panelBottom - NAV_FOOTER_HEIGHT + 4,
+                isOverFilterLink(mouseX, mouseY) ? theme.accent : theme.dim);
     }
 
-    private DropEntry drawContent(int pMouseX, int pMouseY) {
-        int tLeft = getContentLeft();
-        int tRight = getContentRight();
-        int tY = getHeaderBottom() + PADDING;
+    private DropEntry drawContent(int mouseX, int mouseY) {
+        int left = getContentLeft();
+        int right = getContentRight();
+        int y = getHeaderBottom() + PADDING;
 
         fontRendererObj.drawString(
-                getRarityFormat(mSelected.mRarity) + fontRendererObj.trimStringToWidth(mSelected.mName, tRight - tLeft),
-                tLeft,
-                tY,
-                mTheme.text);
-        String tSummary = mTheme.labelFormat + String.format(
+                getRarityFormat(selectedBag.rarity) + fontRendererObj.trimStringToWidth(selectedBag.name, right - left),
+                left,
+                y,
+                theme.text);
+        String summary = theme.labelFormat + String.format(
                 StatHelper.get("gui.stats.summary"),
                 highlight(formatFull(getSelectedOpened())),
                 highlight(formatFull(getSelectedTotalItems())),
-                highlight(formatFull(mDrops.size())));
-        String tSort = getSortLabel();
-        int tSortWidth = fontRendererObj.getStringWidth(tSort);
+                highlight(formatFull(drops.size())));
+        String sort = getSortLabel();
+        int sortWidth = fontRendererObj.getStringWidth(sort);
         fontRendererObj.drawString(
-                fontRendererObj.trimStringToWidth(tSummary, tRight - tLeft - tSortWidth - 8),
-                tLeft,
-                tY + 12,
-                mTheme.dim);
-        if (!mDrops.isEmpty()) fontRendererObj.drawString(
-                tSort,
-                tRight - tSortWidth,
-                tY + 12,
-                isOverSortLink(pMouseX, pMouseY) ? mTheme.accent : mTheme.dim);
+                fontRendererObj.trimStringToWidth(summary, right - left - sortWidth - 8),
+                left,
+                y + 12,
+                theme.dim);
+        if (!drops.isEmpty()) fontRendererObj
+                .drawString(sort, right - sortWidth, y + 12, isOverSortLink(mouseX, mouseY) ? theme.accent : theme.dim);
 
-        double tLuck = getLuckPercent();
-        if (tLuck >= 0) {
-            int tLuckY = getLuckY();
-            int tLuckColor = getLuckColor(tLuck);
-            String tLabel = StatHelper.get("gui.stats.luck") + " ";
-            String tValue = String.format("%.1f%%", tLuck);
-            fontRendererObj.drawString(tLabel, tLeft, tLuckY, mTheme.dim);
-            int tValueX = tLeft + fontRendererObj.getStringWidth(tLabel);
-            fontRendererObj.drawString(tValue, tValueX, tLuckY, tLuckColor);
-            int tBarLeft = tValueX + fontRendererObj.getStringWidth(tValue) + 8;
-            int tBarY = tLuckY + 3;
-            if (tRight - tBarLeft > 10) {
-                drawRect(tBarLeft, tBarY, tRight, tBarY + 3, mTheme.line);
-                int tFill = (int) Math.round((tRight - tBarLeft) * tLuck / 100.0D);
-                drawRect(tBarLeft, tBarY, tBarLeft + tFill, tBarY + 3, 0xFF000000 | tLuckColor);
+        double luck = getLuckPercent();
+        if (luck >= 0) {
+            int luckY = getLuckY();
+            int luckColor = getLuckColor(luck);
+            String label = StatHelper.get("gui.stats.luck") + " ";
+            String value = String.format("%.1f%%", luck);
+            fontRendererObj.drawString(label, left, luckY, theme.dim);
+            int valueX = left + fontRendererObj.getStringWidth(label);
+            fontRendererObj.drawString(value, valueX, luckY, luckColor);
+            int barLeft = valueX + fontRendererObj.getStringWidth(value) + 8;
+            int barY = luckY + 3;
+            if (right - barLeft > 10) {
+                drawRect(barLeft, barY, right, barY + 3, theme.line);
+                int fill = (int) Math.round((right - barLeft) * luck / 100.0D);
+                drawRect(barLeft, barY, barLeft + fill, barY + 3, 0xFF000000 | luckColor);
             }
         }
 
-        int tGridTop = getGridTop();
-        int tGridBottom = getGridBottom();
+        int gridTop = getGridTop();
+        int gridBottom = getGridBottom();
 
-        if (mDrops.isEmpty()) {
-            String tMessage = StatHelper
+        if (drops.isEmpty()) {
+            String message = StatHelper
                     .get(getSelectedOpened() == 0 ? "gui.stats.never_opened" : "gui.stats.nothing_dropped");
             @SuppressWarnings("unchecked")
-            List<String> tLines = fontRendererObj.listFormattedStringToWidth(tMessage, tRight - tLeft);
-            int tTextY = tGridTop + (tGridBottom - tGridTop) / 2 - tLines.size() * 5;
-            for (String tLine : tLines) {
+            List<String> lines = fontRendererObj.listFormattedStringToWidth(message, right - left);
+            int textY = gridTop + (gridBottom - gridTop) / 2 - lines.size() * 5;
+            for (String line : lines) {
                 fontRendererObj.drawString(
-                        tLine,
-                        (tLeft + tRight - fontRendererObj.getStringWidth(tLine)) / 2,
-                        tTextY,
-                        mTheme.faint);
-                tTextY += 10;
+                        line,
+                        (left + right - fontRendererObj.getStringWidth(line)) / 2,
+                        textY,
+                        theme.faint);
+                textY += 10;
             }
             return null;
         }
 
-        int tColumns = getGridColumns();
-        DropEntry tHovered = getDropAt(pMouseX, pMouseY);
-        long tTotalTimes = getSelectedTotalTimes();
-        beginScissor(tLeft, tGridTop, mRight - tLeft, tGridBottom - tGridTop);
-        int tSectionTop = tGridTop - mGridScroll;
-        for (Section tSection : mSections) {
-            if (tSectionTop + SECTION_HEADER_HEIGHT > tGridTop && tSectionTop < tGridBottom) {
-                String tShare = String.format(
+        int columns = getGridColumns();
+        DropEntry hovered = getDropAt(mouseX, mouseY);
+        long totalTimes = getSelectedTotalTimes();
+        beginScissor(left, gridTop, panelRight - left, gridBottom - gridTop);
+        int sectionTop = gridTop - gridScroll;
+        for (Section section : sections) {
+            if (sectionTop + SECTION_HEADER_HEIGHT > gridTop && sectionTop < gridBottom) {
+                String share = String.format(
                         "%s  %s",
-                        formatFull(getTimes(tSection.mDrops)),
-                        formatPercent(getTimes(tSection.mDrops), tTotalTimes));
-                fontRendererObj.drawString(tSection.mTitle, tLeft, tSectionTop + 1, mTheme.body);
+                        formatFull(getTimes(section.drops)),
+                        formatPercent(getTimes(section.drops), totalTimes));
+                fontRendererObj.drawString(section.title, left, sectionTop + 1, theme.body);
                 fontRendererObj.drawString(
-                        tShare,
-                        tLeft + fontRendererObj.getStringWidth(tSection.mTitle) + 6,
-                        tSectionTop + 1,
-                        mTheme.faint);
+                        share,
+                        left + fontRendererObj.getStringWidth(section.title) + 6,
+                        sectionTop + 1,
+                        theme.faint);
             }
 
-            int tItemsTop = tSectionTop + SECTION_HEADER_HEIGHT;
-            for (int i = 0; i < tSection.mDrops.size(); i++) {
-                int tX = tLeft + (i % tColumns) * SLOT_SIZE;
-                int tSlotY = tItemsTop + (i / tColumns) * SLOT_SIZE;
-                if (tSlotY + SLOT_SIZE <= tGridTop || tSlotY >= tGridBottom) continue;
+            int itemsTop = sectionTop + SECTION_HEADER_HEIGHT;
+            for (int i = 0; i < section.drops.size(); i++) {
+                int x = left + (i % columns) * SLOT_SIZE;
+                int slotY = itemsTop + (i / columns) * SLOT_SIZE;
+                if (slotY + SLOT_SIZE <= gridTop || slotY >= gridBottom) continue;
 
-                DropEntry tDrop = tSection.mDrops.get(i);
-                if (tDrop == tHovered) drawRect(tX, tSlotY, tX + SLOT_SIZE, tSlotY + SLOT_SIZE, mTheme.hover);
-                drawItem(tDrop.mStack, tX, tSlotY, formatCompact(tDrop.mItemCount));
+                DropEntry drop = section.drops.get(i);
+                if (drop == hovered) drawRect(x, slotY, x + SLOT_SIZE, slotY + SLOT_SIZE, theme.hover);
+                drawItem(drop.stack, x, slotY, formatCompact(drop.itemCount));
             }
-            tSectionTop += getSectionHeight(tSection) + SECTION_GAP;
+            sectionTop += getSectionHeight(section) + SECTION_GAP;
         }
         endScissor();
 
-        drawScrollbar(mRight - 3, tGridTop, tGridBottom, mGridScroll, getGridContentHeight());
-        return tHovered;
+        drawScrollbar(panelRight - 3, gridTop, gridBottom, gridScroll, getGridContentHeight());
+        return hovered;
     }
 
-    private void drawScrollbar(int pX, int pTop, int pBottom, int pScroll, int pContentHeight) {
-        int tViewHeight = pBottom - pTop;
-        int tMaxScroll = pContentHeight - tViewHeight;
-        if (tMaxScroll <= 0) return;
-        int tThumbHeight = Math.max(10, tViewHeight * tViewHeight / pContentHeight);
-        int tThumbTop = pTop + (tViewHeight - tThumbHeight) * pScroll / tMaxScroll;
-        drawRect(pX, tThumbTop, pX + 2, tThumbTop + tThumbHeight, mTheme.scrollbar);
+    private void drawScrollbar(int x, int top, int bottom, int scroll, int contentHeight) {
+        int viewHeight = bottom - top;
+        int maxScroll = contentHeight - viewHeight;
+        if (maxScroll <= 0) return;
+        int thumbHeight = Math.max(10, viewHeight * viewHeight / contentHeight);
+        int thumbTop = top + (viewHeight - thumbHeight) * scroll / maxScroll;
+        drawRect(x, thumbTop, x + 2, thumbTop + thumbHeight, theme.scrollbar);
     }
 
-    private void drawItem(ItemStack pStack, int pX, int pY, String pOverlay) {
+    private void drawItem(ItemStack stack, int x, int y, String overlay) {
         GL11.glPushMatrix();
         GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
         GL11.glEnable(GL12.GL_RESCALE_NORMAL);
@@ -786,14 +782,9 @@ public class GuiLootBagStats extends GuiScreen {
         GL11.glEnable(GL11.GL_DEPTH_TEST);
         itemRender.zLevel = 100.0F;
         try {
-            itemRender.renderItemAndEffectIntoGUI(fontRendererObj, mc.getTextureManager(), pStack, pX + 1, pY + 1);
-            if (pOverlay != null) itemRender.renderItemOverlayIntoGUI(
-                    fontRendererObj,
-                    mc.getTextureManager(),
-                    pStack,
-                    pX + 1,
-                    pY + 1,
-                    pOverlay);
+            itemRender.renderItemAndEffectIntoGUI(fontRendererObj, mc.getTextureManager(), stack, x + 1, y + 1);
+            if (overlay != null) itemRender
+                    .renderItemOverlayIntoGUI(fontRendererObj, mc.getTextureManager(), stack, x + 1, y + 1, overlay);
         } catch (Exception ignored) {}
         itemRender.zLevel = 0.0F;
         GL11.glDisable(GL11.GL_DEPTH_TEST);
@@ -804,57 +795,57 @@ public class GuiLootBagStats extends GuiScreen {
     }
 
     @SuppressWarnings("unchecked")
-    private void drawDropTooltip(DropEntry pDrop, int pMouseX, int pMouseY) {
-        List<String> tTip = new ArrayList<>();
-        List<String> tItemTip;
+    private void drawDropTooltip(DropEntry drop, int mouseX, int mouseY) {
+        List<String> tip = new ArrayList<>();
+        List<String> itemTip;
         try {
-            tItemTip = pDrop.mStack.getTooltip(mc.thePlayer, mc.gameSettings.advancedItemTooltips);
+            itemTip = drop.stack.getTooltip(mc.thePlayer, mc.gameSettings.advancedItemTooltips);
         } catch (Exception e) {
-            tItemTip = new ArrayList<>();
-            tItemTip.add(pDrop.mName);
+            itemTip = new ArrayList<>();
+            itemTip.add(drop.name);
         }
-        for (int i = 0; i < tItemTip.size(); i++) {
-            if (i == 0) tTip.add(pDrop.mStack.getRarity().rarityColor + tItemTip.get(i));
-            else tTip.add(EnumChatFormatting.GRAY + tItemTip.get(i));
+        for (int i = 0; i < itemTip.size(); i++) {
+            if (i == 0) tip.add(drop.stack.getRarity().rarityColor + itemTip.get(i));
+            else tip.add(EnumChatFormatting.GRAY + itemTip.get(i));
         }
 
-        long tOpened = getSelectedOpened();
-        long tTotalTimes = getSelectedTotalTimes();
-        tTip.add("");
-        tTip.add(String.format(StatHelper.get("gui.stats.tip_received"), formatFull(pDrop.mItemCount)));
-        tTip.add(String.format(StatHelper.get("gui.stats.tip_times"), formatFull(pDrop.mTimesDropped)));
-        if (tOpened > 0) tTip.add(
+        long opened = getSelectedOpened();
+        long totalTimes = getSelectedTotalTimes();
+        tip.add("");
+        tip.add(String.format(StatHelper.get("gui.stats.tip_received"), formatFull(drop.itemCount)));
+        tip.add(String.format(StatHelper.get("gui.stats.tip_times"), formatFull(drop.timesDropped)));
+        if (opened > 0) tip.add(
                 String.format(
                         StatHelper.get("gui.stats.tip_per_bag"),
-                        String.format("%.2f", (double) pDrop.mItemCount / tOpened)));
-        if (tTotalTimes > 0) tTip.add(
-                String.format(StatHelper.get("gui.stats.tip_share"), formatPercent(pDrop.mTimesDropped, tTotalTimes)));
-        if (pDrop.mTrash) tTip.add(StatHelper.get("gui.stats.tip_trash"));
+                        String.format("%.2f", (double) drop.itemCount / opened)));
+        if (totalTimes > 0)
+            tip.add(String.format(StatHelper.get("gui.stats.tip_share"), formatPercent(drop.timesDropped, totalTimes)));
+        if (drop.trash) tip.add(StatHelper.get("gui.stats.tip_trash"));
 
-        drawHoveringText(tTip, pMouseX, pMouseY, fontRendererObj);
+        drawHoveringText(tip, mouseX, mouseY, fontRendererObj);
     }
 
-    private void beginScissor(int pX, int pY, int pWidth, int pHeight) {
-        int tScale = new ScaledResolution(mc, mc.displayWidth, mc.displayHeight).getScaleFactor();
+    private void beginScissor(int x, int y, int clipWidth, int clipHeight) {
+        int scale = new ScaledResolution(mc, mc.displayWidth, mc.displayHeight).getScaleFactor();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
         GL11.glScissor(
-                pX * tScale,
-                mc.displayHeight - (pY + pHeight) * tScale,
-                Math.max(0, pWidth * tScale),
-                Math.max(0, pHeight * tScale));
+                x * scale,
+                mc.displayHeight - (y + clipHeight) * scale,
+                Math.max(0, clipWidth * scale),
+                Math.max(0, clipHeight * scale));
     }
 
     private static void endScissor() {
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
     }
 
-    private String highlight(String pNumber) {
-        return mTheme.numberFormat + pNumber + mTheme.labelFormat;
+    private String highlight(String number) {
+        return theme.numberFormat + number + theme.labelFormat;
     }
 
-    private String getRarityFormat(EnumRarity pRarity) {
-        if (mTheme == Theme.DARK) return pRarity.rarityColor.toString();
-        switch (pRarity) {
+    private String getRarityFormat(EnumRarity rarity) {
+        if (theme == Theme.DARK) return rarity.rarityColor.toString();
+        switch (rarity) {
             case uncommon:
                 return EnumChatFormatting.GOLD.toString();
             case rare:
@@ -866,73 +857,73 @@ public class GuiLootBagStats extends GuiScreen {
         }
     }
 
-    private static String formatPercent(long pPart, long pTotal) {
-        return pTotal <= 0 ? "-" : String.format("%.1f%%", 100.0D * pPart / pTotal);
+    private static String formatPercent(long part, long total) {
+        return total <= 0 ? "-" : String.format("%.1f%%", 100.0D * part / total);
     }
 
-    private static String formatFull(long pNumber) {
-        return String.format("%,d", pNumber);
+    private static String formatFull(long number) {
+        return String.format("%,d", number);
     }
 
-    private static String formatCompact(long pNumber) {
-        if (pNumber < 1000) return Long.toString(pNumber);
-        if (pNumber < 10000) return String.format(Locale.ROOT, "%.1fk", pNumber / 1000.0D);
-        if (pNumber < 1000000) return (pNumber / 1000) + "k";
-        if (pNumber < 10000000) return String.format(Locale.ROOT, "%.1fM", pNumber / 1000000.0D);
-        if (pNumber < 1000000000) return (pNumber / 1000000) + "M";
-        return (pNumber / 1000000000) + "G";
+    private static String formatCompact(long number) {
+        if (number < 1000) return Long.toString(number);
+        if (number < 10000) return String.format(Locale.ROOT, "%.1fk", number / 1000.0D);
+        if (number < 1000000) return (number / 1000) + "k";
+        if (number < 10000000) return String.format(Locale.ROOT, "%.1fM", number / 1000000.0D);
+        if (number < 1000000000) return (number / 1000000) + "M";
+        return (number / 1000000000) + "G";
     }
 
     private static class BagEntry {
 
-        private final int mID;
-        private final String mName;
-        private final EnumRarity mRarity;
-        private final ItemStack mIcon;
-        private final GroupStats mStats;
+        private final int id;
+        private final String name;
+        private final EnumRarity rarity;
+        private final ItemStack icon;
+        private final GroupStats stats;
 
-        private BagEntry(int pID, String pName, EnumRarity pRarity, ItemStack pIcon, GroupStats pStats) {
-            mID = pID;
-            mName = pName;
-            mRarity = pRarity;
-            mIcon = pIcon;
-            mStats = pStats;
+        private BagEntry(int id, String name, EnumRarity rarity, ItemStack icon, GroupStats stats) {
+            this.id = id;
+            this.name = name;
+            this.rarity = rarity;
+            this.icon = icon;
+            this.stats = stats;
         }
 
         private int getOpened() {
-            return mStats == null ? 0 : mStats.getOpened();
+            return stats == null ? 0 : stats.getOpened();
         }
     }
 
     private static class DropEntry {
 
-        private final ItemStack mStack;
-        private final String mName;
-        private long mItemCount;
-        private int mTimesDropped;
-        private final boolean mTrash;
+        private final ItemStack stack;
+        private final String name;
+        private long itemCount;
+        private int timesDropped;
+        private final boolean trash;
 
-        private DropEntry(ItemStack pStack, boolean pTrash) {
-            mStack = pStack;
-            mTrash = pTrash;
-            String tName;
+        private DropEntry(ItemStack stack, boolean trash) {
+            this.stack = stack;
+            this.trash = trash;
+            String name;
             try {
-                tName = pStack.getDisplayName();
+                name = stack.getDisplayName();
             } catch (Exception e) {
-                tName = String.valueOf(Item.itemRegistry.getNameForObject(pStack.getItem()));
+                name = String.valueOf(Item.itemRegistry.getNameForObject(stack.getItem()));
             }
-            mName = tName;
+            this.name = name;
         }
     }
 
     private static class Section {
 
-        private final String mTitle;
-        private final List<DropEntry> mDrops;
+        private final String title;
+        private final List<DropEntry> drops;
 
-        private Section(String pTitle, List<DropEntry> pDrops) {
-            mTitle = pTitle;
-            mDrops = pDrops;
+        private Section(String title, List<DropEntry> drops) {
+            this.title = title;
+            this.drops = drops;
         }
     }
 }

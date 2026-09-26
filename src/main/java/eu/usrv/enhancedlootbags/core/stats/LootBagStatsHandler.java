@@ -29,122 +29,122 @@ public class LootBagStatsHandler {
 
     private static final String FILE_NAME = "LootBagStats.dat";
 
-    private final LogHelper _mLogger = EnhancedLootBags.Logger;
-    private final Map<UUID, LootBagStats> _mPlayerStats = new HashMap<>();
-    private File _mSaveDir = null;
-    private boolean _mDirty = false;
+    private final LogHelper logger = EnhancedLootBags.Logger;
+    private final Map<UUID, LootBagStats> playerStats = new HashMap<>();
+    private File saveDir = null;
+    private boolean dirty = false;
 
     private void initStorage() {
-        File tSaveDir = DimensionManager.getCurrentSaveRootDirectory();
-        if (tSaveDir == null || tSaveDir.equals(_mSaveDir)) return;
+        File currentDir = DimensionManager.getCurrentSaveRootDirectory();
+        if (currentDir == null || currentDir.equals(saveDir)) return;
 
-        _mPlayerStats.clear();
-        _mDirty = false;
-        _mSaveDir = tSaveDir;
+        playerStats.clear();
+        dirty = false;
+        saveDir = currentDir;
 
-        File tFile = new File(tSaveDir, FILE_NAME);
-        if (!tFile.exists()) return;
+        File file = new File(currentDir, FILE_NAME);
+        if (!file.exists()) return;
 
-        try (FileInputStream tIn = new FileInputStream(tFile)) {
-            NBTTagCompound tRoot = CompressedStreamTools.readCompressed(tIn);
-            for (Object tKey : tRoot.func_150296_c()) {
-                String tUUID = (String) tKey;
+        try (FileInputStream in = new FileInputStream(file)) {
+            NBTTagCompound root = CompressedStreamTools.readCompressed(in);
+            for (Object key : root.func_150296_c()) {
+                String uuid = (String) key;
                 try {
-                    LootBagStats tStats = LootBagStats.readFromNBT(tRoot.getCompoundTag(tUUID));
-                    updateTrashFlags(tStats);
-                    _mPlayerStats.put(UUID.fromString(tUUID), tStats);
+                    LootBagStats stats = LootBagStats.readFromNBT(root.getCompoundTag(uuid));
+                    updateTrashFlags(stats);
+                    playerStats.put(UUID.fromString(uuid), stats);
                 } catch (IllegalArgumentException e) {
-                    _mLogger.warn(String.format("[LootBags] Skipping invalid player entry %s in %s", tUUID, FILE_NAME));
+                    logger.warn(String.format("[LootBags] Skipping invalid player entry %s in %s", uuid, FILE_NAME));
                 }
             }
         } catch (Exception e) {
-            _mLogger.error(String.format("[LootBags] Unable to load %s; Statistics will start fresh", FILE_NAME));
+            logger.error(String.format("[LootBags] Unable to load %s; Statistics will start fresh", FILE_NAME));
             e.printStackTrace();
         }
     }
 
-    private void updateTrashFlags(LootBagStats pStats) {
-        for (GroupStats tGroup : pStats.getGroups()) {
-            if (EnhancedLootBags.LootGroupHandler.getGroupByID(tGroup.getGroupID()) == null) continue;
-            for (LootBagStats.DropStats tDrop : tGroup.getDrops())
-                tDrop.setTrash(EnhancedLootBags.LootGroupHandler.isTrashDrop(tGroup.getGroupID(), tDrop.getDropID()));
+    private void updateTrashFlags(LootBagStats stats) {
+        for (GroupStats group : stats.getGroups()) {
+            if (EnhancedLootBags.LootGroupHandler.getGroupByID(group.getGroupID()) == null) continue;
+            for (LootBagStats.DropStats drop : group.getDrops())
+                drop.setTrash(EnhancedLootBags.LootGroupHandler.isTrashDrop(group.getGroupID(), drop.getDropID()));
         }
     }
 
     public void save() {
-        if (!_mDirty || _mSaveDir == null) return;
+        if (!dirty || saveDir == null) return;
 
-        NBTTagCompound tRoot = new NBTTagCompound();
-        for (Map.Entry<UUID, LootBagStats> tEntry : _mPlayerStats.entrySet())
-            tRoot.setTag(tEntry.getKey().toString(), tEntry.getValue().writeToNBT());
+        NBTTagCompound root = new NBTTagCompound();
+        for (Map.Entry<UUID, LootBagStats> entry : playerStats.entrySet())
+            root.setTag(entry.getKey().toString(), entry.getValue().writeToNBT());
 
-        File tFile = new File(_mSaveDir, FILE_NAME);
-        File tTmpFile = new File(_mSaveDir, FILE_NAME + ".tmp");
+        File file = new File(saveDir, FILE_NAME);
+        File tmpFile = new File(saveDir, FILE_NAME + ".tmp");
         try {
-            try (FileOutputStream tOut = new FileOutputStream(tTmpFile)) {
-                CompressedStreamTools.writeCompressed(tRoot, tOut);
+            try (FileOutputStream out = new FileOutputStream(tmpFile)) {
+                CompressedStreamTools.writeCompressed(root, out);
             }
-            if (tFile.exists() && !tFile.delete()) throw new IllegalStateException("Unable to replace " + tFile);
-            if (!tTmpFile.renameTo(tFile)) throw new IllegalStateException("Unable to rename " + tTmpFile);
-            _mDirty = false;
+            if (file.exists() && !file.delete()) throw new IllegalStateException("Unable to replace " + file);
+            if (!tmpFile.renameTo(file)) throw new IllegalStateException("Unable to rename " + tmpFile);
+            dirty = false;
         } catch (Exception e) {
-            _mLogger.error(String.format("[LootBags] Unable to save %s", FILE_NAME));
+            logger.error(String.format("[LootBags] Unable to save %s", FILE_NAME));
             e.printStackTrace();
         }
     }
 
     public void unload() {
         save();
-        _mPlayerStats.clear();
-        _mSaveDir = null;
+        playerStats.clear();
+        saveDir = null;
     }
 
-    public LootBagStats getStats(EntityPlayer pPlayer) {
+    public LootBagStats getStats(EntityPlayer player) {
         initStorage();
-        UUID tUUID = pPlayer.getUniqueID();
-        LootBagStats tStats = _mPlayerStats.get(tUUID);
-        if (tStats == null) {
-            tStats = new LootBagStats();
-            _mPlayerStats.put(tUUID, tStats);
+        UUID uuid = player.getUniqueID();
+        LootBagStats stats = playerStats.get(uuid);
+        if (stats == null) {
+            stats = new LootBagStats();
+            playerStats.put(uuid, stats);
         }
-        return tStats;
+        return stats;
     }
 
-    public void recordOpening(EntityPlayer pPlayer, int pGroupID, OpenRecord pRecord) {
-        GroupStats tGroup = getStats(pPlayer).getOrCreateGroup(pGroupID);
-        tGroup.incrementOpened();
-        for (int i = 0; i < pRecord.mDrops.size(); i++) {
-            String tDropID = pRecord.mDrops.get(i).getIdentifier();
-            tGroup.recordDrop(
-                    tDropID,
-                    pRecord.mStacks.get(i),
-                    EnhancedLootBags.LootGroupHandler.isTrashDrop(pGroupID, tDropID));
+    public void recordOpening(EntityPlayer player, int groupID, OpenRecord record) {
+        GroupStats group = getStats(player).getOrCreateGroup(groupID);
+        group.incrementOpened();
+        for (int i = 0; i < record.drops.size(); i++) {
+            String dropID = record.drops.get(i).getIdentifier();
+            group.recordDrop(
+                    dropID,
+                    record.stacks.get(i),
+                    EnhancedLootBags.LootGroupHandler.isTrashDrop(groupID, dropID));
         }
-        _mDirty = true;
+        dirty = true;
 
-        if (pPlayer instanceof EntityPlayerMP)
-            EnhancedLootBags.NW.sendTo(LootBagStatsSyncMessage.partial(tGroup), (EntityPlayerMP) pPlayer);
+        if (player instanceof EntityPlayerMP)
+            EnhancedLootBags.NW.sendTo(LootBagStatsSyncMessage.partial(group), (EntityPlayerMP) player);
     }
 
     @SubscribeEvent
-    public void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent pEvent) {
-        if (pEvent.player instanceof EntityPlayerMP) EnhancedLootBags.NW
-                .sendTo(LootBagStatsSyncMessage.full(getStats(pEvent.player)), (EntityPlayerMP) pEvent.player);
+    public void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.player instanceof EntityPlayerMP) EnhancedLootBags.NW
+                .sendTo(LootBagStatsSyncMessage.full(getStats(event.player)), (EntityPlayerMP) event.player);
     }
 
     @SubscribeEvent
-    public void onWorldSave(WorldEvent.Save pEvent) {
-        if (!pEvent.world.isRemote && pEvent.world.provider.dimensionId == 0) save();
+    public void onWorldSave(WorldEvent.Save event) {
+        if (!event.world.isRemote && event.world.provider.dimensionId == 0) save();
     }
 
     public static class OpenRecord {
 
-        private final List<Drop> mDrops = new ArrayList<>();
-        private final List<ItemStack> mStacks = new ArrayList<>();
+        private final List<Drop> drops = new ArrayList<>();
+        private final List<ItemStack> stacks = new ArrayList<>();
 
-        public void add(Drop pDrop, ItemStack pStack) {
-            mDrops.add(pDrop);
-            mStacks.add(pStack.copy());
+        public void add(Drop drop, ItemStack stack) {
+            drops.add(drop);
+            stacks.add(stack.copy());
         }
     }
 }
