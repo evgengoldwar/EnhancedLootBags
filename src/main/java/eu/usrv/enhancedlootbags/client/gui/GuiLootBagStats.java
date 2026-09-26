@@ -45,7 +45,7 @@ public class GuiLootBagStats extends GuiScreen {
     private static final int NAV_FOOTER_HEIGHT = 16;
     private static final int NAV_ROW_HEIGHT = 18;
     private static final int PADDING = 10;
-    private static final int SLOT_SIZE = 18;
+    private static final int SLOT_SIZE = 20;
     private static final int SCROLL_STEP = 18;
     private static final int SECTION_HEADER_HEIGHT = 13;
     private static final int SECTION_GAP = 8;
@@ -738,7 +738,7 @@ public class GuiLootBagStats extends GuiScreen {
                 if (drop == hovered) {
                     drawRect(x, slotY, x + SLOT_SIZE, slotY + SLOT_SIZE, COLOR_HOVER);
                 }
-                drawItem(drop.stack, x, slotY, formatCompact(drop.itemCount));
+                drawItem(drop.stack, x + 1, slotY + 1, formatCompact(drop.itemCount));
             }
             sectionTop += getSectionHeight(section) + SECTION_GAP;
         }
@@ -769,13 +769,7 @@ public class GuiLootBagStats extends GuiScreen {
         try {
             itemRender.renderItemAndEffectIntoGUI(fontRendererObj, mc.getTextureManager(), stack, x + 1, y + 1);
             if (overlay != null) {
-                itemRender.renderItemOverlayIntoGUI(
-                        fontRendererObj,
-                        mc.getTextureManager(),
-                        stack,
-                        x + 1,
-                        y + 1,
-                        overlay);
+                itemRender.renderItemOverlayIntoGUI(fontRendererObj, mc.getTextureManager(), stack, x + 1, y + 1, "");
             }
         } catch (Exception ignored) {}
         itemRender.zLevel = 0.0F;
@@ -783,6 +777,18 @@ public class GuiLootBagStats extends GuiScreen {
         RenderHelper.disableStandardItemLighting();
         GL11.glDisable(GL12.GL_RESCALE_NORMAL);
         GL11.glDisable(GL11.GL_LIGHTING);
+        if (overlay != null) {
+            drawStackCount(overlay, x, y);
+        }
+        GL11.glPopMatrix();
+    }
+
+    private void drawStackCount(String count, int x, int y) {
+        float scale = count.length() <= 2 ? 1.0F : 0.5F;
+        GL11.glPushMatrix();
+        GL11.glTranslatef(x + 17, y + 17, 0.0F);
+        GL11.glScalef(scale, scale, 1.0F);
+        fontRendererObj.drawStringWithShadow(count, -fontRendererObj.getStringWidth(count), -7, 0xFFFFFF);
         GL11.glPopMatrix();
     }
 
